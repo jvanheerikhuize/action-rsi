@@ -14,10 +14,10 @@ else
   RED='' GREEN='' YELLOW='' BLUE='' BOLD='' NC=''
 fi
 
-log_info()  { echo -e "${GREEN}[INFO]${NC}  $(date -u +%H:%M:%S) $*"; }
+log_info()  { echo -e "${GREEN}[INFO]${NC}  $(date -u +%H:%M:%S) $*" >&2; }
 log_warn()  { echo -e "${YELLOW}[WARN]${NC}  $(date -u +%H:%M:%S) $*" >&2; }
 log_error() { echo -e "${RED}[ERROR]${NC} $(date -u +%H:%M:%S) $*" >&2; }
-log_step()  { echo -e "${BLUE}${BOLD}[STEP]${NC}  $(date -u +%H:%M:%S) $*"; }
+log_step()  { echo -e "${BLUE}${BOLD}[STEP]${NC}  $(date -u +%H:%M:%S) $*" >&2; }
 
 # Retry a command with exponential backoff
 # Usage: retry <max_attempts> <initial_delay_secs> <command...>

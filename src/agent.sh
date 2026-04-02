@@ -292,9 +292,10 @@ agent_chat() {
   while [[ $round -lt $MAX_TOOL_ROUNDS ]]; do
     round=$((round + 1))
 
-    # Build request body
-    local request_body
-    request_body="$(jq -nc \
+    # Build request body and write to temp file (avoids shell escaping issues)
+    local request_file
+    request_file="$(mktemp /tmp/rsi-request.XXXXXX)"
+    jq -nc \
       --arg model "$MODEL" \
       --arg system "$system_prompt" \
       --argjson messages "$messages" \
@@ -305,20 +306,22 @@ agent_chat() {
         system: $system,
         messages: $messages,
         tools: $tools
-      }')"
+      }' > "$request_file"
 
-    # Call Claude API
+    # Call Claude API (use @file to avoid shell escaping issues with -d)
     local response
     response="$(retry 3 5 curl -sf \
       -H "Content-Type: application/json" \
       -H "x-api-key: ${ANTHROPIC_API_KEY}" \
       -H "anthropic-version: ${CLAUDE_VERSION}" \
-      -d "$request_body" \
+      -d "@${request_file}" \
       "$CLAUDE_API")" || {
+      rm -f "$request_file"
       log_error "Claude API call failed for ${repo_name} (round $round)"
       echo '{"error":"API call failed"}'
       return 1
     }
+    rm -f "$request_file"
 
     # Track costs
     local input_tokens output_tokens
