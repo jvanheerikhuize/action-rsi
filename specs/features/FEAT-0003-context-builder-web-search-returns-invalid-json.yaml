@@ -1,0 +1,39 @@
+metadata:
+  id: FEAT-0003
+  title: Context Builder Web Search Returns Invalid JSON
+  version: 1.0.0
+  status: draft
+  priority: high
+  author: RSI Audit Agent
+  created_at: "2026-04-02"
+  updated_at: "2026-04-02"
+  tags:
+    - rsi-audit
+    - functional
+    - bug
+description:
+  summary: 'Automated audit finding: Context Builder Web Search Returns Invalid JSON'
+  problem_statement: '- The _ctx_web_search function in src/context_builder.sh uses AWK to parse HTML and construct JSON, but this approach is fragile and produces invalid JSON when special characters are present in titles or URLs. The function at lines 120-160 doesn''t properly escape JSON strings, leading to malformed context bundles that will cause the LLM analysis to fail.'
+  proposed_solution: '- Replace the AWK HTML parsing with a more robust approach using jq for JSON construction, or implement proper escaping of quotes and backslashes in the AWK script. Consider using a simple regex-based extraction followed by proper JSON encoding.'
+  out_of_scope:
+    - Changes unrelated to the identified findings
+  dependencies: []
+technical_requirements:
+  constraints: []
+  security: []
+acceptance_criteria:
+  - id: AC-001
+    given: The src/context_builder.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Replace the AWK HTML parsing with a more robust approach using jq for JSON construction, or implement proper escaping of quotes and backslashes in the AWK script. Consider using a simple regex-based extraction followed by proper JSON encoding.
+technical_notes: 'Files affected: src/context_builder.sh'
+testing_requirements:
+  unit_tests: true
+  integration_tests: false
+  e2e_tests: false
+  performance_tests: false
+  test_scenarios:
+    - Verify the fix addresses the identified issue
+rollout:
+  rollout_strategy: manual
+  rollback_plan: Revert the changes introduced by this spec via git revert.

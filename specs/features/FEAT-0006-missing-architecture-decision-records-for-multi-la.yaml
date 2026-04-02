@@ -1,0 +1,39 @@
+metadata:
+  id: FEAT-0006
+  title: Missing Architecture Decision Records for Multi-Layer Design
+  version: 1.0.0
+  status: draft
+  priority: medium
+  author: RSI Audit Agent
+  created_at: "2026-04-02"
+  updated_at: "2026-04-02"
+  tags:
+    - rsi-audit
+    - documentation
+    - documentation
+description:
+  summary: 'Automated audit finding: Missing Architecture Decision Records for Multi-Layer Design'
+  problem_statement: '- The README.md describes the three-layer architecture (static → context → LLM) but lacks documentation on why this specific design was chosen over alternatives. The decision to use a single LLM call vs multiple specialized calls, the context size limitations (CTX_MAX_CHARS=80000), and the web search integration rationale are not documented.'
+  proposed_solution: '- Create Architecture Decision Records (ADRs) documenting key design decisions, especially the rationale for the three-layer approach, context size limits, and integration patterns. Add a docs/ directory with technical deep-dives for each major component.'
+  out_of_scope:
+    - Changes unrelated to the identified findings
+  dependencies: []
+technical_requirements:
+  constraints: []
+  security: []
+acceptance_criteria:
+  - id: AC-001
+    given: The README.md file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Create Architecture Decision Records (ADRs) documenting key design decisions, especially the rationale for the three-layer approach, context size limits, and integration patterns. Add a docs/ directory with technical deep-dives for each major component.
+technical_notes: 'Files affected: README.md, docs/'
+testing_requirements:
+  unit_tests: true
+  integration_tests: false
+  e2e_tests: false
+  performance_tests: false
+  test_scenarios:
+    - Verify the fix addresses the identified issue
+rollout:
+  rollout_strategy: manual
+  rollback_plan: Revert the changes introduced by this spec via git revert.
