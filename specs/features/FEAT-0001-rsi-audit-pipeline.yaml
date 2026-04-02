@@ -5,7 +5,7 @@ metadata:
   id: "FEAT-0001"
   title: "Recursive Self-Improvement AI Audit Pipeline"
   version: "1.0.0"
-  status: "draft"
+  status: "superseded"
   priority: "critical"
   author: "Jerry"
   created_at: "2026-04-02"

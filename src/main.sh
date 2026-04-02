@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # main.sh — RSI (Recursive Self-Improvement) audit entrypoint
-# v2: static analysis → context builder → single-shot LLM
+# Architecture: static analysis → context builder → single-shot LLM
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,13 +14,24 @@ source "${SCRIPT_DIR}/discovery.sh"
 source "${SCRIPT_DIR}/static_analysis.sh"
 source "${SCRIPT_DIR}/context_builder.sh"
 source "${SCRIPT_DIR}/llm_analyzer.sh"
-source "${SCRIPT_DIR}/agent.sh"
-source "${SCRIPT_DIR}/auditor.sh"
 source "${SCRIPT_DIR}/spec_generator.sh"
 source "${SCRIPT_DIR}/pr_manager.sh"
 
+# Build ecosystem summaries for all target repos
+build_summaries() {
+  local summaries_dir="${WORKSPACE}/.summaries"
+  mkdir -p "$summaries_dir"
+
+  for repo_name in "${TARGET_REPOS[@]}"; do
+    local repo_dir="${WORKSPACE}/${repo_name}"
+    if [[ -d "$repo_dir" ]]; then
+      discovery_repo_summary "$repo_dir" "$repo_name" > "${summaries_dir}/${repo_name}.json"
+    fi
+  done
+}
+
 main() {
-  banner "RSI — Recursive Self-Improvement" "v2 Audit Pipeline"
+  banner "RSI — Recursive Self-Improvement" "Audit Pipeline"
 
   # Load and validate config
   config_load
@@ -55,11 +66,11 @@ main() {
     fi
   done
 
-  # ── Phase 3: Ecosystem summaries ────────────────────────────────
+  # ── Phase 3: Ecosystem Summaries ────────────────────────────────
   phase 3 "Ecosystem Summaries"
-  auditor_build_summaries
+  build_summaries
 
-  # ── Phase 4: Static Analysis (Layer 1 — FREE) ──────────────────
+  # ── Phase 4: Static Analysis (FREE) ─────────────────────────────
   phase 4 "Static Analysis"
   local -A static_results=()
   local total_static_findings=0
@@ -75,7 +86,7 @@ main() {
   done
   arrow "Total static findings: ${BOLD}${total_static_findings}${NC} ${DIM}(free)${NC}"
 
-  # ── Phase 5: Context Building (Layer 2) ─────────────────────────
+  # ── Phase 5: Context Building ───────────────────────────────────
   phase 5 "Context Building"
   local -A context_bundles=()
   for repo in "${cloned_repos[@]}"; do
@@ -87,7 +98,7 @@ main() {
     repo_footer
   done
 
-  # ── Phase 6: LLM Analysis (Layer 3 — single-shot) ──────────────
+  # ── Phase 6: LLM Analysis (single-shot) ─────────────────────────
   phase 6 "LLM Analysis"
   for repo in "${cloned_repos[@]}"; do
     # Budget check
@@ -211,9 +222,7 @@ main() {
     pct="$(awk "BEGIN {printf \"%.0f\", ($(cost_get_total) / $BUDGET_USD) * 100}")"
 
     cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-## RSI v2 Audit — ${AUDIT_DATE}
-
-**Dimensions:** ${DIMENSIONS[*]//_/ }
+## RSI Audit — ${AUDIT_DATE}
 
 ### Results
 
@@ -233,7 +242,6 @@ main() {
 |---|---|
 | **Total** | \$${total_cost} USD |
 | **Budget used** | ${pct}% of \$${BUDGET_USD} |
-| **Architecture** | v2 (static + single-shot LLM) |
 
 EOF
     # Per-repo cost table

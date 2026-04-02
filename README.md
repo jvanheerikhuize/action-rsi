@@ -4,33 +4,39 @@ AI-powered audit system that periodically reviews all repositories for quality, 
 
 ## What it does
 
-Each audit dimension runs as its own GitHub Action on a staggered schedule — one per day — so you can manage costs per dimension and disable expensive ones independently.
+The audit runs in three layers — most findings come from free static analysis, with a single LLM call per repo for deeper insights.
 
-| Dimension | Schedule | Focus |
-|-----------|----------|-------|
-| **Functional** | Monday | Code quality, bugs, test coverage gaps |
-| **Non-functional** | Tuesday | Security, performance, maintainability |
-| **Feature ideas** | Wednesday | New capabilities based on repo purpose and tech stack |
-| **Documentation** | Thursday | README completeness, inline docs, missing guides |
-| **Cross-references** | Friday | Shared patterns, dependency alignment, ecosystem drift |
-| **Web insights** | Saturday | Emerging trends, new libraries, techniques, and advisories via web research |
+| Layer | What | Cost |
+|-------|------|------|
+| **Static Analysis** | ShellCheck, security patterns, gitleaks, trivy | FREE |
+| **Context Builder** | Pre-loads key files, static results, web research | FREE |
+| **LLM Analysis** | Single-shot Claude API call with prompt caching | ~$0.05-0.10/repo |
 
-Each dimension has its own $2 budget cap. You can also trigger any combination manually via the main workflow (comma-separated: `functional,documentation`).
+The LLM covers all audit dimensions in one call: functional issues, security, documentation gaps, feature ideas, and web insights. Static analysis handles the bulk of code quality and security findings at zero cost.
 
-For each finding, the system generates A-SDLC feature spec files (YAML) and opens a pull request in the target repository. Web research on industry best practices is logged for traceability.
+For each finding, the system generates A-SDLC feature spec files (YAML) and opens a pull request in the target repository.
 
 ## How it works
 
+Three-layer architecture: free static analysis first, then smart context building, then a single LLM call per repo.
+
 ```
-┌─────────────┐     ┌──────────────┐     ┌────────────────┐     ┌───────────┐
-│  Cron/Manual │────▶│  Discover &  │────▶│  Claude API    │────▶│  Generate │
-│  Trigger     │     │  Clone Repos │     │  Audit Agent   │     │  Specs    │
-└─────────────┘     └──────────────┘     │  + Web Search  │     └─────┬─────┘
-                                          └────────────────┘           │
-                                                                       ▼
-                                          ┌────────────────┐     ┌───────────┐
-                                          │  Research Logs │◀────│  Open PRs │
-                                          │  (JSONL)       │     │  per Repo │
+┌─────────────┐     ┌──────────────┐     ┌────────────────┐
+│  Cron/Manual │────▶│  Discover &  │────▶│  Layer 1:      │
+│  Trigger     │     │  Clone Repos │     │  Static        │  FREE
+└─────────────┘     └──────────────┘     │  Analysis      │
+                                          └───────┬────────┘
+                                                  │
+                                          ┌───────▼────────┐
+                                          │  Layer 2:      │
+                                          │  Context       │  FREE
+                                          │  Builder       │
+                                          └───────┬────────┘
+                                                  │
+                                          ┌───────▼────────┐     ┌───────────┐
+                                          │  Layer 3:      │────▶│  Generate │
+                                          │  Single-Shot   │     │  Specs &  │
+                                          │  LLM (1 call)  │     │  Open PRs │
                                           └────────────────┘     └───────────┘
 ```
 
@@ -78,19 +84,21 @@ schedule: "0 6 * * 1"             # Monday 06:00 UTC
 
 ```
 rsi/
-├── .github/workflows/rsi-audit.yml   # Scheduled GitHub Action
-├── src/                               # Bash source
-│   ├── main.sh                        # Entrypoint
+├── .github/workflows/
+│   ├── rsi-audit.yml                  # Main reusable workflow
+│   └── dimension-*.yml                # Per-dimension trigger workflows
+├── src/
+│   ├── main.sh                        # Entrypoint & orchestrator
 │   ├── config.sh                      # Configuration loader (yq)
 │   ├── discovery.sh                   # GitHub API (repos, cloning, PRs)
-│   ├── agent.sh                       # Claude API client with tool use (curl + jq)
-│   ├── auditor.sh                     # Audit orchestrator
-│   ├── dimensions/                    # Six audit dimension modules
+│   ├── static_analysis.sh            # Layer 1: ShellCheck, security, gitleaks, trivy
+│   ├── context_builder.sh            # Layer 2: Pre-load files, static results, web search
+│   ├── llm_analyzer.sh               # Layer 3: Single-shot Claude API with prompt caching
 │   ├── spec_generator.sh             # YAML spec file generator
-│   ├── research_logger.sh            # JSONL research log writer
 │   ├── pr_manager.sh                 # PR creation and management
-│   └── cost_tracker.sh               # API cost budget enforcement
-├── templates/                         # envsubst/yq spec templates
+│   ├── cost_tracker.sh               # API cost budget enforcement
+│   ├── research_logger.sh            # JSONL research log writer
+│   └── utils.sh                       # Logging and display helpers
 ├── logs/research/                     # Web research logs (JSONL)
 ├── specs/features/                    # This project's own specs
 └── rsi.config.yaml                    # Audit configuration

@@ -134,6 +134,11 @@ summary_box() {
 
 # ── Utility functions ───────────────────────────────────────────────
 
+# Strip markdown code fences from LLM responses (```json ... ```)
+strip_code_fences() {
+  sed 's/^```json[[:space:]]*//; s/^```[[:space:]]*$//; /^$/d'
+}
+
 # Retry a command with exponential backoff
 # Usage: retry <max_attempts> <initial_delay_secs> <command...>
 retry() {

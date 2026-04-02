@@ -6,34 +6,22 @@ github_username: jvanheerikhuize
 # Test mode (default: true) — only audit test_repos until you're confident
 test_mode: true
 test_repos:
+  - rsi
   - dotfiles
-  - a-sdlc
 
 # Repos to skip (e.g., forks, archived, irrelevant)
 exclude_repos:
   - Roomba
 
 # Budget cap per run in USD — audit stops when this is reached
-budget_usd: 10
+budget_usd: 2
 
-# Claude model to use for audits
+# Claude model to use for the single-shot LLM analysis
 model: claude-sonnet-4-20250514
 
 # Maximum specs to generate per repo per audit run
 max_specs_per_repo: 5
 
-# Audit dimensions to run (comment out to disable)
-dimensions:
-  - functional
-  - non_functional
-  - feature_ideas
-  - documentation
-  - cross_references
-  - web_insights
-
 # SearXNG instance URL for web research (default: public instance)
 # Set to your own instance for reliability: https://docs.searxng.org/
 # searxng_url: "https://search.ononoki.org"
-
-# Cron schedule (used as documentation — actual schedule is in the workflow YAML)
-schedule: "0 6 * * 1"
