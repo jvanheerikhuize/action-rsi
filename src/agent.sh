@@ -308,22 +308,49 @@ agent_chat() {
         tools: $tools
       }' > "$request_file"
 
-    # Call Claude API (use @file to avoid shell escaping issues with -d)
-    local response_file
-    response_file="$(mktemp /tmp/rsi-response.XXXXXX)"
+    # Call Claude API with rate-limit aware retry
+    local response=""
+    local http_code="000"
+    local api_attempt=0
+    local api_max_attempts=5
+    local api_delay=10  # start with 10s for rate limits
 
-    local http_code
-    http_code="$(retry 3 5 curl -s -w '%{http_code}' -o "$response_file" \
-      -H "Content-Type: application/json" \
-      -H "x-api-key: ${ANTHROPIC_API_KEY}" \
-      -H "anthropic-version: ${CLAUDE_VERSION}" \
-      -d "@${request_file}" \
-      "$CLAUDE_API")" || http_code="000"
+    while [[ $api_attempt -lt $api_max_attempts ]]; do
+      api_attempt=$((api_attempt + 1))
+
+      local response_file
+      response_file="$(mktemp /tmp/rsi-response.XXXXXX)"
+
+      http_code="$(curl -s -w '%{http_code}' -o "$response_file" \
+        -H "Content-Type: application/json" \
+        -H "x-api-key: ${ANTHROPIC_API_KEY}" \
+        -H "anthropic-version: ${CLAUDE_VERSION}" \
+        -d "@${request_file}" \
+        "$CLAUDE_API")" || http_code="000"
+
+      response="$(cat "$response_file")"
+      rm -f "$response_file"
+
+      # Success
+      if [[ "$http_code" == "200" ]]; then
+        break
+      fi
+
+      # Rate limited (429) or overloaded (529) — wait and retry
+      if [[ "$http_code" == "429" || "$http_code" == "529" ]]; then
+        # Try to read retry-after from response headers, default to backoff
+        local wait_secs="$api_delay"
+        log_warn "Rate limited (HTTP ${http_code}), waiting ${wait_secs}s before retry ${api_attempt}/${api_max_attempts}..."
+        sleep "$wait_secs"
+        api_delay=$((api_delay * 2))  # exponential backoff: 10, 20, 40, 80, 160
+        continue
+      fi
+
+      # Non-retryable error — fail immediately
+      break
+    done
 
     rm -f "$request_file"
-    local response
-    response="$(cat "$response_file")"
-    rm -f "$response_file"
 
     if [[ "$http_code" != "200" ]]; then
       local err_msg
