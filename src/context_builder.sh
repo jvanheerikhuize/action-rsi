@@ -143,32 +143,25 @@ _ctx_web_search() {
     return 0
   }
 
-  # Parse titles and URLs from DDG HTML
-  results="$(echo "$html" | awk '
-    BEGIN { print "["; first=1; count=0 }
-    /<a rel="nofollow" class="result__a"/ {
-      if (count >= 5) exit
-      match($0, /href="([^"]*)"/, href)
-      match($0, />([^<]+)<\/a>/, title)
-      if (href[1] != "" && title[1] != "") {
-        url = href[1]
-        if (url ~ /uddg=/) {
-          match(url, /uddg=([^&]*)/, decoded)
-          url = decoded[1]
-        }
-        gsub(/%2F/, "/", url)
-        gsub(/%3A/, ":", url)
-        gsub(/"/, "\\\"", title[1])
-        if (!first) print ","
-        first = 0
-        printf "{\"url\":\"%s\",\"title\":\"%s\"}", url, title[1]
-        count++
-      }
-    }
-    END { print "]" }
-  ' 2>/dev/null)" || results="[]"
+  # Extract titles and URLs from DDG HTML, build JSON safely via jq
+  results="$(echo "$html" \
+    | grep -oP '<a rel="nofollow" class="result__a"[^>]*href="[^"]*"[^>]*>[^<]+</a>' \
+    | head -5 \
+    | while IFS= read -r line; do
+        local url title
+        url="$(echo "$line" | grep -oP 'href="\K[^"]+' || true)"
+        title="$(echo "$line" | grep -oP '>\K[^<]+(?=</a>)' || true)"
+        [[ -z "$url" || -z "$title" ]] && continue
+        # Extract actual URL from DDG redirect wrapper
+        if [[ "$url" == *"uddg="* ]]; then
+          url="$(echo "$url" | grep -oP 'uddg=\K[^&]+' || echo "$url")"
+          url="$(printf '%b' "${url//%/\\x}" 2>/dev/null || echo "$url")"
+        fi
+        jq -nc --arg url "$url" --arg title "$title" '{url: $url, title: $title}'
+      done \
+    | jq -sc '.' 2>/dev/null)" || results="[]"
 
-  # Validate JSON
+  # Ensure valid JSON array
   echo "$results" | jq '.' 2>/dev/null || echo "[]"
 }
 

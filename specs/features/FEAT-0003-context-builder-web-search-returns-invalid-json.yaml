@@ -2,7 +2,7 @@ metadata:
   id: FEAT-0003
   title: Context Builder Web Search Returns Invalid JSON
   version: 1.0.0
-  status: draft
+  status: implemented
   priority: high
   author: RSI Audit Agent
   created_at: "2026-04-02"
