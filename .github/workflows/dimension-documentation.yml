@@ -14,6 +14,9 @@ on:
         type: number
         default: 2
 
+permissions:
+  contents: write
+
 jobs:
   documentation:
     uses: ./.github/workflows/rsi-audit.yml
