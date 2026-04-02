@@ -3,6 +3,11 @@
 set -euo pipefail
 
 CLAUDE_API="https://api.anthropic.com/v1/messages"
+
+# Strip markdown code fences from Claude responses (```json ... ```)
+strip_code_fences() {
+  sed 's/^```json[[:space:]]*//; s/^```[[:space:]]*$//; /^$/d'
+}
 CLAUDE_VERSION="2023-06-01"
 MAX_TOOL_ROUNDS=15
 
@@ -372,8 +377,8 @@ agent_chat() {
     stop_reason="$(echo "$response" | jq -r '.stop_reason')"
 
     if [[ "$stop_reason" == "end_turn" ]]; then
-      # Extract the text response
-      echo "$response" | jq -r '.content[] | select(.type == "text") | .text'
+      # Extract the text response, stripping any markdown code fences
+      echo "$response" | jq -r '.content[] | select(.type == "text") | .text' | strip_code_fences
       return 0
     fi
 
@@ -420,7 +425,7 @@ agent_chat() {
     else
       # Unexpected stop reason
       log_warn "Unexpected stop_reason: $stop_reason"
-      echo "$response" | jq -r '.content[] | select(.type == "text") | .text // "{\"error\":\"unexpected stop\"}"'
+      echo "$response" | jq -r '.content[] | select(.type == "text") | .text // "{\"error\":\"unexpected stop\"}"' | strip_code_fences
       return 0
     fi
   done
@@ -479,7 +484,7 @@ agent_chat() {
     output_tokens="$(echo "$response" | jq -r '.usage.output_tokens // 0')"
     cost_record "$repo_name" "$input_tokens" "$output_tokens"
     research_log_agent_call "$repo_name" "${CURRENT_DIMENSION:-unknown}" "$input_tokens" "$output_tokens"
-    echo "$response" | jq -r '.content[] | select(.type == "text") | .text'
+    echo "$response" | jq -r '.content[] | select(.type == "text") | .text' | strip_code_fences
   else
     log_error "Final forced response also failed (HTTP ${http_code}) for ${repo_name}"
     echo '{"error":"max tool rounds reached and final response failed"}'

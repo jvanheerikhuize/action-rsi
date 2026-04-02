@@ -66,11 +66,19 @@ jobs:
         run: |
           git config user.name "RSI Audit Agent"
           git config user.email "rsi-audit@noreply.github.com"
-          git pull --rebase origin main 2>/dev/null || true
           if [[ -n "$(git status logs/ --porcelain 2>/dev/null)" ]]; then
             git add logs/
             git commit -m "RSI: research logs for $(date -u +%Y-%m-%d) [${RSI_DIMENSIONS:-all}]"
-            git push
+            # Retry push up to 3 times (pull --rebase before each attempt)
+            for attempt in 1 2 3; do
+              git pull --rebase origin main 2>/dev/null || true
+              if git push; then
+                echo "Push succeeded on attempt $attempt"
+                break
+              fi
+              echo "Push failed (attempt $attempt/3), retrying in 5s..."
+              sleep 5
+            done
           else
             echo "No new research logs to commit"
           fi
