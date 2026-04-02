@@ -1,0 +1,34 @@
+# RSI — Recursive Self-Improvement Audit Configuration
+# This file controls which repos are audited, how, and at what cost.
+
+github_username: jvanheerikhuize
+
+# Test mode (default: true) — only audit test_repos until you're confident
+test_mode: true
+test_repos:
+  - dotfiles
+  - a-sdlc
+
+# Repos to skip (e.g., forks, archived, irrelevant)
+exclude_repos:
+  - Roomba
+
+# Budget cap per run in USD — audit stops when this is reached
+budget_usd: 10
+
+# Claude model to use for audits
+model: claude-sonnet-4-20250514
+
+# Maximum specs to generate per repo per audit run
+max_specs_per_repo: 5
+
+# Audit dimensions to run (comment out to disable)
+dimensions:
+  - functional
+  - non_functional
+  - feature_ideas
+  - documentation
+  - cross_references
+
+# Cron schedule (used as documentation — actual schedule is in the workflow YAML)
+schedule: "0 6 * * 1"
