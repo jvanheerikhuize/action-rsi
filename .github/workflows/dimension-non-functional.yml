@@ -1,8 +1,8 @@
 name: "RSI: Non-Functional Audit"
 
 on:
-  schedule:
-    - cron: '0 6 * * 2'  # Tuesday 06:00 UTC
+  # schedule:
+  #   - cron: '0 6 * * 2'  # Tuesday 06:00 UTC
   workflow_dispatch:
     inputs:
       test_mode:

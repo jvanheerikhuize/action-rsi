@@ -1,8 +1,8 @@
 name: "RSI: Cross-References"
 
 on:
-  schedule:
-    - cron: '0 6 * * 5'  # Friday 06:00 UTC
+  # schedule:
+  #   - cron: '0 6 * * 5'  # Friday 06:00 UTC
   workflow_dispatch:
     inputs:
       test_mode:
