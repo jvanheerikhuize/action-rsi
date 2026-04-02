@@ -13,6 +13,7 @@ A GitHub Action runs on a configurable schedule and uses the Claude API to audit
 | **Feature ideas** | New capabilities based on repo purpose and tech stack |
 | **Documentation** | README completeness, inline docs, missing guides |
 | **Cross-references** | Shared patterns, dependency alignment, ecosystem drift |
+| **Web insights** | Emerging trends, new libraries, techniques, and advisories via web research |
 
 For each finding, the system generates A-SDLC feature spec files (YAML) and opens a pull request in the target repository. Web research on industry best practices is logged for traceability.
 
@@ -81,7 +82,7 @@ rsi/
 │   ├── discovery.sh                   # GitHub API (repos, cloning, PRs)
 │   ├── agent.sh                       # Claude API client with tool use (curl + jq)
 │   ├── auditor.sh                     # Audit orchestrator
-│   ├── dimensions/                    # Five audit dimension modules
+│   ├── dimensions/                    # Six audit dimension modules
 │   ├── spec_generator.sh             # YAML spec file generator
 │   ├── research_logger.sh            # JSONL research log writer
 │   ├── pr_manager.sh                 # PR creation and management

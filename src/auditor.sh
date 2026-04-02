@@ -9,6 +9,7 @@ source "${SCRIPT_DIR}/dimensions/non_functional.sh"
 source "${SCRIPT_DIR}/dimensions/feature_ideas.sh"
 source "${SCRIPT_DIR}/dimensions/documentation.sh"
 source "${SCRIPT_DIR}/dimensions/cross_references.sh"
+source "${SCRIPT_DIR}/dimensions/web_insights.sh"
 
 # Run all configured audit dimensions on a single repo
 # Usage: auditor_run <repo_dir> <repo_name>
@@ -45,6 +46,9 @@ auditor_run() {
         ;;
       cross_references)
         dimension_findings="$(audit_cross_references "$repo_dir" "$repo_name")" || true
+        ;;
+      web_insights)
+        dimension_findings="$(audit_web_insights "$repo_dir" "$repo_name")" || true
         ;;
       *)
         log_warn "Unknown dimension: $dimension"

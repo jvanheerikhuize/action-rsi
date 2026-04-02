@@ -29,6 +29,7 @@ dimensions:
   - feature_ideas
   - documentation
   - cross_references
+  - web_insights
 
 # Cron schedule (used as documentation — actual schedule is in the workflow YAML)
 schedule: "0 6 * * 1"
