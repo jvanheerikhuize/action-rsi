@@ -75,8 +75,8 @@ EOF
 
   git remote set-url origin "https://x-access-token:${api_token}@github.com/${GITHUB_USERNAME}/${repo_name}.git"
 
-  # Push branch
-  retry 3 2 git push -u origin "$branch" || {
+  # Push branch (force-push since audit branches are always overwritten)
+  retry 3 2 git push --force -u origin "$branch" || {
     log_error "Failed to push branch ${branch} to ${repo_name}"
     cd - > /dev/null
     return 1
