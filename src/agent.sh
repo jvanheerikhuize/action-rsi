@@ -4,7 +4,7 @@ set -euo pipefail
 
 CLAUDE_API="https://api.anthropic.com/v1/messages"
 CLAUDE_VERSION="2023-06-01"
-MAX_TOOL_ROUNDS=10
+MAX_TOOL_ROUNDS=15
 
 # Tool definitions for the audit agent
 TOOL_DEFINITIONS='[
@@ -423,6 +423,63 @@ agent_chat() {
     fi
   done
 
-  log_warn "Max tool rounds ($MAX_TOOL_ROUNDS) reached for ${repo_name}"
-  echo '{"error":"max tool rounds reached"}'
+  log_warn "Max tool rounds ($MAX_TOOL_ROUNDS) reached for ${repo_name} — forcing final response"
+
+  # Force a final response by calling the API without tools
+  local request_file
+  request_file="$(mktemp /tmp/rsi-request.XXXXXX)"
+
+  # Add a nudge message to produce findings now
+  messages="$(echo "$messages" | jq \
+    '. + [{"role":"user","content":"You have used all available tool calls. Please produce your final JSON response NOW with the findings you have gathered so far. Do not attempt any more tool calls."}]')"
+
+  jq -nc \
+    --arg model "$MODEL" \
+    --arg system "$system_prompt" \
+    --argjson messages "$messages" \
+    '{
+      model: $model,
+      max_tokens: 4096,
+      system: $system,
+      messages: $messages
+    }' > "$request_file"
+
+  local response="" http_code="000"
+  local response_file
+  response_file="$(mktemp /tmp/rsi-response.XXXXXX)"
+
+  local api_attempt=0 api_delay=10
+  while [[ $api_attempt -lt 5 ]]; do
+    api_attempt=$((api_attempt + 1))
+    http_code="$(curl -s -w '%{http_code}' -o "$response_file" \
+      -H "Content-Type: application/json" \
+      -H "x-api-key: ${ANTHROPIC_API_KEY}" \
+      -H "anthropic-version: ${CLAUDE_VERSION}" \
+      -d "@${request_file}" \
+      "$CLAUDE_API")" || http_code="000"
+    response="$(cat "$response_file")"
+
+    if [[ "$http_code" == "200" ]]; then break; fi
+    if [[ "$http_code" == "429" || "$http_code" == "529" ]]; then
+      log_warn "Rate limited (HTTP ${http_code}), waiting ${api_delay}s before retry ${api_attempt}/5..."
+      sleep "$api_delay"
+      api_delay=$((api_delay * 2))
+      continue
+    fi
+    break
+  done
+
+  rm -f "$request_file" "$response_file"
+
+  if [[ "$http_code" == "200" ]]; then
+    local input_tokens output_tokens
+    input_tokens="$(echo "$response" | jq -r '.usage.input_tokens // 0')"
+    output_tokens="$(echo "$response" | jq -r '.usage.output_tokens // 0')"
+    cost_record "$repo_name" "$input_tokens" "$output_tokens"
+    research_log_agent_call "$repo_name" "${CURRENT_DIMENSION:-unknown}" "$input_tokens" "$output_tokens"
+    echo "$response" | jq -r '.content[] | select(.type == "text") | .text'
+  else
+    log_error "Final forced response also failed (HTTP ${http_code}) for ${repo_name}"
+    echo '{"error":"max tool rounds reached and final response failed"}'
+  fi
 }

@@ -62,7 +62,19 @@ audit_web_insights() {
   CURRENT_DIMENSION="web_insights"
   log_step "  Running web insights research on ${repo_name}..."
 
-  local user_msg="Research the web for new insights relevant to the '${repo_name}' repository. First read the README and explore the structure to understand its purpose and tech stack. Then perform at least 3 web searches covering: (1) domain best practices, (2) tech stack improvements, (3) emerging trends or alternatives. Cite all sources with URLs."
+  # Include repo summary upfront so the agent can skip file exploration and focus on web research
+  local repo_summary=""
+  local summary_file="${WORKSPACE}/.summaries/${repo_name}.json"
+  if [[ -f "$summary_file" ]]; then
+    repo_summary="$(cat "$summary_file")"
+  fi
+
+  local user_msg="Research the web for new insights relevant to the '${repo_name}' repository.
+
+Here is a pre-computed summary of the repository (no need to explore files yourself):
+${repo_summary}
+
+Skip file exploration — go straight to web searches. Perform at least 3 web searches covering: (1) domain best practices, (2) tech stack improvements, (3) emerging trends or alternatives. Then produce your JSON findings. Cite all sources with URLs."
 
   local findings
   findings="$(agent_chat "$repo_dir" "$repo_name" "$WEB_INSIGHTS_SYSTEM_PROMPT" "$user_msg")"
