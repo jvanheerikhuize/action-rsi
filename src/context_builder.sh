@@ -48,7 +48,7 @@ _ctx_select_key_files() {
   if [[ "$remaining" -gt 0 ]]; then
     while IFS= read -r f; do
       [[ -z "$f" ]] && continue
-      local rel="${f#${repo_dir}/}"
+      local rel="${f#"${repo_dir}/"}"
       # Skip if already selected
       local skip=false
       for s in "${selected[@]}"; do
@@ -213,16 +213,14 @@ ctx_build() {
   local web_results="[]"
   if [[ " ${DIMENSIONS[*]:-} " == *" web_insights "* ]] || [[ "${RSI_DIMENSIONS:-all}" == "all" ]]; then
     tool_line "web search (pre-fetch)"
-    # Determine repo tech stack from metrics
-    local languages
-    languages="$(echo "$static_findings" | jq -r '.metrics.largest_files // ""')"
     local readme_excerpt
     readme_excerpt="$(echo "$key_files_json" | jq -r '.[0].content // ""' | head -5 | tr '\n' ' ' | cut -c1-200)"
 
     # Run 3 targeted searches
-    local q1="best practices $(echo "$readme_excerpt" | cut -c1-60) 2025 2026"
-    local q2="bash shell scripting security automation best practices 2026"
-    local q3="open source tools similar to ${repo_name} alternatives 2026"
+    local q1 q2 q3
+    q1="best practices $(echo "$readme_excerpt" | cut -c1-60) 2025 2026"
+    q2="bash shell scripting security automation best practices 2026"
+    q3="open source tools similar to ${repo_name} alternatives 2026"
 
     local r1 r2 r3
     r1="$(_ctx_web_search "$q1")"
@@ -274,8 +272,7 @@ ctx_build() {
     }')"
 
   # Report context size
-  local bundle_chars
-  bundle_chars="$(echo "$bundle" | wc -c)"
+  local bundle_chars=${#bundle}
   local approx_tokens=$((bundle_chars / 4))
   repo_line "  ${SYM_CHECK} Context: ~${approx_tokens} tokens ${DIM}(${#key_files_json} files, $(echo "$web_results" | jq 'length') searches)${NC}"
 

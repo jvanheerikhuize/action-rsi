@@ -56,8 +56,9 @@ config_load() {
     DIMENSIONS=("${trimmed[@]}")
   fi
 
-  # Workspace for cloned repos
+  # Workspace for cloned repos (restricted permissions — may contain tokens in git remotes)
   WORKSPACE="$(mktemp -d /tmp/rsi-workspace.XXXXXX)"
+  chmod 700 "$WORKSPACE"
 
   # Logs directory
   AUDIT_DATE="$(date -u +%Y-%m-%d)"
@@ -75,6 +76,8 @@ config_load() {
 
   export GITHUB_USERNAME TEST_MODE BUDGET_USD MODEL MAX_SPECS_PER_REPO
   export WORKSPACE AUDIT_DATE LOG_DIR RSI_ROOT
+  export EXCLUDE_REPOS REPOS_DISCOVERED REPOS_AUDITED SPECS_GENERATED
+  export PRS_OPENED REPOS_SKIPPED_BUDGET REPOS_FAILED TOTAL_FINDINGS
 }
 
 config_validate() {
@@ -82,6 +85,9 @@ config_validate() {
 
   if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
     fail_line "ANTHROPIC_API_KEY is not set"
+    errors=$((errors + 1))
+  elif [[ ! "${ANTHROPIC_API_KEY}" =~ ^sk-ant- ]]; then
+    fail_line "ANTHROPIC_API_KEY has unexpected format (should start with sk-ant-)"
     errors=$((errors + 1))
   fi
 

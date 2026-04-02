@@ -26,8 +26,6 @@ SYM_ARROW="${CYAN}→${NC}"
 SYM_WARN="${YELLOW}!${NC}"
 SYM_SEARCH="${MAGENTA}◈${NC}"
 SYM_TOOL="${DIM}↳${NC}"
-SYM_DOT="${DIM}·${NC}"
-SYM_BUDGET="${YELLOW}\$${NC}"
 
 # ── Core log functions ──────────────────────────────────────────────
 log_info()  { echo -e "  ${DIM}$(date -u +%H:%M:%S)${NC}  $*" >&2; }
@@ -135,7 +133,7 @@ summary_box() {
 # ── Utility functions ───────────────────────────────────────────────
 
 # Strip markdown code fences from LLM responses (```json ... ```)
-strip_code_fences() {
+strip_code_fences() { # shellcheck disable=SC2016
   sed 's/^```json[[:space:]]*//; s/^```[[:space:]]*$//; /^$/d'
 }
 

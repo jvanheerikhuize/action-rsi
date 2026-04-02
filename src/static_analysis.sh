@@ -238,11 +238,10 @@ _sa_run_trivy() {
 _sa_repo_metrics() {
   local repo_dir="$1"
 
-  local total_files sh_files yaml_files other_files total_lines
+  local total_files sh_files yaml_files total_lines
   total_files="$(find "$repo_dir" -type f -not -path '*/.git/*' 2>/dev/null | wc -l)"
   sh_files="$(find "$repo_dir" -name '*.sh' -not -path '*/.git/*' 2>/dev/null | wc -l)"
   yaml_files="$(find "$repo_dir" \( -name '*.yaml' -o -name '*.yml' \) -not -path '*/.git/*' 2>/dev/null | wc -l)"
-  other_files=$((total_files - sh_files - yaml_files))
   total_lines="$(find "$repo_dir" -name '*.sh' -not -path '*/.git/*' -exec cat {} + 2>/dev/null | wc -l)"
 
   # Count functions

@@ -5,6 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# shellcheck disable=SC1091
 # Source all modules
 source "${SCRIPT_DIR}/utils.sh"
 source "${SCRIPT_DIR}/config.sh"
@@ -246,13 +247,15 @@ main() {
 EOF
     # Per-repo cost table
     if [[ "$(jq '.per_repo | length' "$COST_FILE")" -gt 0 ]]; then
-      echo "### Per-repo breakdown" >> "$GITHUB_STEP_SUMMARY"
-      echo "" >> "$GITHUB_STEP_SUMMARY"
-      echo "| Repo | Cost | Tokens (in/out) |" >> "$GITHUB_STEP_SUMMARY"
-      echo "|------|-----:|----------------:|" >> "$GITHUB_STEP_SUMMARY"
-      jq -r '.per_repo | to_entries | sort_by(-.value.cost_usd)[] |
-        "| \(.key) | $\(.value.cost_usd | tostring | .[0:8]) | \(.value.input_tokens)/\(.value.output_tokens) |"' \
-        "$COST_FILE" >> "$GITHUB_STEP_SUMMARY"
+      {
+        echo "### Per-repo breakdown"
+        echo ""
+        echo "| Repo | Cost | Tokens (in/out) |"
+        echo "|------|-----:|----------------:|"
+        jq -r '.per_repo | to_entries | sort_by(-.value.cost_usd)[] |
+          "| \(.key) | $\(.value.cost_usd | tostring | .[0:8]) | \(.value.input_tokens)/\(.value.output_tokens) |"' \
+          "$COST_FILE"
+      } >> "$GITHUB_STEP_SUMMARY"
     fi
   fi
 }

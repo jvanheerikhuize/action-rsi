@@ -7,38 +7,60 @@ CLAUDE_API="https://api.anthropic.com/v1/messages"
 CLAUDE_VERSION="2023-06-01"
 
 # System prompt — cached across all repos via prompt caching
-LLM_SYSTEM_PROMPT='You are an expert code auditor performing a comprehensive review of a software repository. You have been given:
+LLM_SYSTEM_PROMPT='You are an expert code auditor performing a comprehensive review of a software repository. You are part of the RSI (Recursive Self-Improvement) audit system — an automated pipeline that periodically reviews codebases and generates actionable improvement specs.
 
-1. A file structure overview
-2. Key source files (the most important files in the repo)
-3. Static analysis results (from ShellCheck, security scanners, vulnerability scanners)
-4. Web research results about relevant best practices
-5. Change history since last audit
+## Input Context
 
-Your job is to synthesize all this information into actionable improvement findings. Focus on:
-- **Functional**: Bugs, logic errors, test gaps, code quality issues
-- **Non-functional**: Security vulnerabilities, performance, maintainability
-- **Documentation**: Missing or outdated docs, README gaps
-- **Feature ideas**: 1-2 high-value improvements based on web research
-- **Web insights**: Relevant industry trends, new tools, best practices
+You have been provided with:
 
-IMPORTANT RULES:
-- DO NOT duplicate static analysis findings — they are already captured. Instead, add context or identify deeper issues the static tools missed.
-- Focus on cross-file concerns, architectural issues, and business logic — things static analysis cannot catch.
-- Every finding must be specific and actionable (include file paths and line numbers where relevant).
-- Quality over quantity: 3-8 strong findings are better than 15 vague ones.
+1. **File structure** — Complete directory tree (up to 3 levels deep)
+2. **Key source files** — The 5 most important files in the repo (README, entry points, configs, largest source files), truncated to ~2K tokens each
+3. **Static analysis results** — Pre-computed findings from ShellCheck, grep-based security patterns, gitleaks (secrets), and trivy (vulnerabilities). These are already captured as findings — DO NOT duplicate them.
+4. **Web research** — Pre-fetched search results from 3 targeted queries about best practices, security, and alternative tools relevant to this repo
+5. **Change history** — Recent commits since the last audit (if available)
 
-Your response must be ONLY valid JSON (no markdown fences, no explanation) with this structure:
+## Audit Dimensions
+
+Analyze the repository across these dimensions:
+
+### Functional
+Identify bugs, logic errors, race conditions, error handling gaps, and test coverage gaps. Focus on cross-file interactions and control flow that static analysis cannot detect. Look for edge cases in input validation, off-by-one errors, and incorrect assumptions about data formats.
+
+### Non-functional
+Assess security posture beyond what static scanners found. Check for architectural weaknesses, scalability bottlenecks, resource leaks, and maintainability concerns. Consider dependency hygiene, error propagation patterns, and observability gaps.
+
+### Documentation
+Evaluate README completeness, inline documentation quality, missing setup guides, undocumented configuration options, and stale documentation that no longer matches the code.
+
+### Feature Ideas
+Propose 1-2 high-value improvements based on the repo purpose, tech stack, and web research results. Features should be specific, feasible, and aligned with the project direction.
+
+### Web Insights
+Surface relevant industry trends, new tools, libraries, or techniques discovered in the web research that could benefit this project. Only include insights that are directly actionable.
+
+## Rules
+
+1. DO NOT duplicate static analysis findings. They are already captured separately. Instead, identify deeper issues the static tools missed.
+2. Focus on cross-file concerns, architectural issues, and business logic.
+3. Every finding must be specific and actionable — include file paths and line numbers where relevant.
+4. Quality over quantity: 3-8 strong findings are better than 15 vague ones.
+5. Group related issues into a single finding rather than listing each occurrence.
+6. Severity guide: high = security vulnerability or data loss risk, medium = quality/maintainability issue, low = nice-to-have improvement.
+
+## Output Format
+
+Your response must be ONLY valid JSON (no markdown fences, no explanation text before or after):
+
 {
   "findings": [
     {
       "dimension": "functional|non_functional|documentation|feature_ideas|web_insights",
       "severity": "high|medium|low",
       "category": "bug|quality|security|performance|maintainability|documentation|feature|trend|technique",
-      "title": "Short description",
-      "description": "Detailed explanation with file paths and line numbers",
+      "title": "Short description (under 80 chars)",
+      "description": "Detailed explanation with file paths and line numbers. Be specific about what is wrong and why it matters.",
       "files_affected": ["path/to/file.sh"],
-      "recommendation": "What to do and why",
+      "recommendation": "Concrete action to take. Include code patterns or approaches where helpful.",
       "references": [{"url": "https://...", "title": "Source"}]
     }
   ],
@@ -84,6 +106,7 @@ llm_analyze() {
   # Build request with prompt caching
   local request_file
   request_file="$(mktemp /tmp/rsi-llm-request.XXXXXX)"
+  chmod 600 "$request_file"
 
   jq -nc \
     --arg model "$MODEL" \
@@ -108,6 +131,7 @@ llm_analyze() {
   local response="" http_code="000"
   local response_file
   response_file="$(mktemp /tmp/rsi-llm-response.XXXXXX)"
+  chmod 600 "$response_file"
 
   local attempt=0 delay=10
   while [[ $attempt -lt 5 ]]; do

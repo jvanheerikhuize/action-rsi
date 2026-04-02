@@ -13,7 +13,7 @@ spec_next_id() {
     while IFS= read -r file; do
       local num
       num="$(basename "$file" | grep -oP 'FEAT-\K[0-9]+' || echo 0)"
-      if [[ "10#$num" -gt "10#$max_id" ]]; then
+      if [[ $((10#$num)) -gt $((10#$max_id)) ]]; then
         max_id="$num"
       fi
     done < <(find "${repo_dir}/specs/features" -name 'FEAT-*.yaml' 2>/dev/null)
@@ -24,7 +24,7 @@ spec_next_id() {
     local config_max
     config_max="$(yq -r '.specifications[]?.id // "" ' "${repo_dir}/specs.config.yaml" 2>/dev/null \
       | grep -oP 'FEAT-\K[0-9]+' | sort -n | tail -1)" || config_max=0
-    if [[ "10#${config_max:-0}" -gt "10#$max_id" ]]; then
+    if [[ $((10#${config_max:-0})) -gt $((10#$max_id)) ]]; then
       max_id="$config_max"
     fi
   fi
@@ -99,13 +99,12 @@ spec_generate() {
   while IFS= read -r finding; do
     local ac_id
     ac_id="$(printf "AC-%03d" $ac_idx)"
-    local finding_title
-    finding_title="$(echo "$finding" | jq -r '.title')"
     local finding_rec
     finding_rec="$(echo "$finding" | jq -r '.recommendation')"
     local affected
     affected="$(echo "$finding" | jq -r '.files_affected[0] // "the codebase"')"
 
+    # shellcheck disable=SC1010
     acceptance_criteria="$(echo "$acceptance_criteria" | jq \
       --arg id "$ac_id" \
       --arg given "The ${affected} file(s) exist in the repository" \

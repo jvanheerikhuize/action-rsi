@@ -10,6 +10,7 @@ OUTPUT_COST_PER_M="${RSI_OUTPUT_COST_PER_M:-15.00}"
 
 cost_init() {
   COST_FILE="$(mktemp /tmp/rsi-cost.XXXXXX)"
+  chmod 600 "$COST_FILE"
   echo '{"total_input_tokens":0,"total_output_tokens":0,"total_cost_usd":0.0,"per_repo":{}}' > "$COST_FILE"
 }
 
