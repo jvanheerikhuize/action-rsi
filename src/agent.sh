@@ -160,27 +160,116 @@ agent_execute_tool() {
   echo "$result"
 }
 
-# Perform a web search via Brave Search API or fallback
+# Default public SearXNG instance (override via SEARXNG_URL env var or rsi.config.yaml)
+SEARXNG_DEFAULT_URL="https://search.ononoki.org"
+
+# List of fallback public SearXNG instances
+SEARXNG_FALLBACKS=(
+  "https://search.ononoki.org"
+  "https://searx.be"
+  "https://search.sapti.me"
+  "https://searxng.site"
+)
+
+# Perform a web search via SearXNG, with DuckDuckGo HTML fallback
 agent_web_search() {
   local query="$1"
   local results="[]"
 
-  if [[ -n "${BRAVE_SEARCH_API_KEY:-}" ]]; then
+  local searxng_url="${SEARXNG_URL:-$SEARXNG_DEFAULT_URL}"
+
+  # Try SearXNG (primary + fallbacks)
+  local instances=("$searxng_url" "${SEARXNG_FALLBACKS[@]}")
+  # Deduplicate
+  local -A seen
+  local unique_instances=()
+  for inst in "${instances[@]}"; do
+    if [[ -z "${seen[$inst]:-}" ]]; then
+      seen[$inst]=1
+      unique_instances+=("$inst")
+    fi
+  done
+
+  for instance in "${unique_instances[@]}"; do
     local encoded_query
     encoded_query="$(printf '%s' "$query" | jq -sRr @uri)"
     local response
-    response="$(curl -sf \
+    response="$(curl -sf --max-time 10 \
       -H "Accept: application/json" \
-      -H "X-Subscription-Token: ${BRAVE_SEARCH_API_KEY}" \
-      "https://api.search.brave.com/res/v1/web/search?q=${encoded_query}&count=5" 2>/dev/null)" || true
+      "${instance}/search?q=${encoded_query}&format=json&categories=general&language=en" 2>/dev/null)" || continue
 
     if [[ -n "$response" ]]; then
-      results="$(echo "$response" | jq '[.web.results[:5] // [] | .[] | {url: .url, title: .title, excerpt: .description}]' 2>/dev/null)" || results="[]"
+      results="$(echo "$response" | jq '[.results[:5] // [] | .[] | {url: .url, title: .title, excerpt: .content}]' 2>/dev/null)" || continue
+      if [[ "$(echo "$results" | jq 'length')" -gt 0 ]]; then
+        log_info "  Web search via SearXNG (${instance}): $(echo "$results" | jq 'length') results"
+        echo "$results"
+        return 0
+      fi
     fi
-  else
-    # Fallback: use a simple note that web search is unavailable
-    results='[{"url":"","title":"Web search unavailable","excerpt":"Set BRAVE_SEARCH_API_KEY to enable web research. Audit will proceed using only repository analysis."}]'
-    log_warn "Web search unavailable — set BRAVE_SEARCH_API_KEY for best practices research"
+  done
+
+  # Fallback: DuckDuckGo HTML scraping
+  log_warn "SearXNG unavailable — falling back to DuckDuckGo HTML scraping"
+  results="$(agent_web_search_ddg "$query")"
+  echo "$results"
+}
+
+# Fallback: scrape DuckDuckGo HTML search results
+agent_web_search_ddg() {
+  local query="$1"
+  local encoded_query
+  encoded_query="$(printf '%s' "$query" | jq -sRr @uri)"
+
+  local html
+  html="$(curl -sf --max-time 10 \
+    -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" \
+    "https://html.duckduckgo.com/html/?q=${encoded_query}" 2>/dev/null)" || {
+    log_warn "DuckDuckGo fallback also failed"
+    echo '[{"url":"","title":"Web search unavailable","excerpt":"All search backends failed. Audit will proceed using only repository analysis."}]'
+    return 0
+  }
+
+  # Parse results from DDG HTML (extract titles, URLs, snippets)
+  local results
+  results="$(echo "$html" | awk '
+    BEGIN { print "["; first=1; count=0 }
+    /<a rel="nofollow" class="result__a"/ {
+      if (count >= 5) exit
+      # Extract href
+      match($0, /href="([^"]*)"/, href)
+      # Extract title text (between > and </a>)
+      match($0, />([^<]+)<\/a>/, title)
+      if (href[1] != "" && title[1] != "") {
+        url = href[1]
+        # Decode DDG redirect URL
+        if (url ~ /uddg=/) {
+          match(url, /uddg=([^&]*)/, decoded)
+          url = decoded[1]
+        }
+        gsub(/%2F/, "/", url)
+        gsub(/%3A/, ":", url)
+        gsub(/%3D/, "=", url)
+        gsub(/%3F/, "?", url)
+        gsub(/%26/, "\\&", url)
+        gsub(/"/, "\\\"", title[1])
+        if (!first) print ","
+        first = 0
+        printf "{\"url\":\"%s\",\"title\":\"%s\",\"excerpt\":\"\"}", url, title[1]
+        count++
+      }
+    }
+    END { print "]" }
+  ' 2>/dev/null)" || results="[]"
+
+  # Validate JSON
+  if ! echo "$results" | jq '.' > /dev/null 2>&1; then
+    results='[{"url":"","title":"DuckDuckGo parse failed","excerpt":"Could not parse search results. Audit will proceed using only repository analysis."}]'
+  fi
+
+  local count
+  count="$(echo "$results" | jq 'length' 2>/dev/null)" || count=0
+  if [[ "$count" -gt 0 ]]; then
+    log_info "  Web search via DuckDuckGo fallback: ${count} results"
   fi
 
   echo "$results"

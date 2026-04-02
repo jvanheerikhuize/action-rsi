@@ -47,6 +47,7 @@ jobs:
           RSI_GITHUB_TOKEN: ${{ secrets.RSI_GITHUB_TOKEN }}
           RSI_TEST_MODE: ${{ inputs.test_mode || 'true' }}
           RSI_BUDGET_USD: ${{ inputs.budget_usd || '10' }}
+          SEARXNG_URL: ${{ secrets.SEARXNG_URL }}
         run: bash src/main.sh
 
       - name: Commit research logs

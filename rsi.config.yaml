@@ -31,5 +31,9 @@ dimensions:
   - cross_references
   - web_insights
 
+# SearXNG instance URL for web research (default: public instance)
+# Set to your own instance for reliability: https://docs.searxng.org/
+# searxng_url: "https://search.ononoki.org"
+
 # Cron schedule (used as documentation — actual schedule is in the workflow YAML)
 schedule: "0 6 * * 1"

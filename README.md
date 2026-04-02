@@ -56,6 +56,7 @@ The workflow runs automatically on the configured schedule. Set these repository
 |--------|-------------|
 | `ANTHROPIC_API_KEY` | Claude API key |
 | `RSI_GITHUB_TOKEN` | GitHub PAT with repo scope |
+| `SEARXNG_URL` | *(optional)* Self-hosted SearXNG instance URL |
 
 ## Configuration
 
@@ -114,10 +115,12 @@ Step-by-step guide to get the RSI audit pipeline running.
    - **Metadata**: Read-only (list repos)
 5. Generate and copy the token
 
-**Brave Search API key (optional, for web research):**
-1. Go to [brave.com/search/api](https://brave.com/search/api/)
-2. Sign up for the free tier (2,000 queries/month)
-3. Copy your API key
+**SearXNG (optional, for better web research reliability):**
+
+Web search works out of the box using public SearXNG instances (free, no key needed).
+For better reliability, you can self-host your own SearXNG instance:
+1. Follow the [SearXNG Docker guide](https://docs.searxng.org/admin/installation-docker.html)
+2. Set the `SEARXNG_URL` env var or `searxng_url` in `rsi.config.yaml`
 
 ### Step 2: Configure Repository Secrets
 
@@ -130,7 +133,7 @@ In the `rsi` repo on GitHub:
 |--------|-------|
 | `ANTHROPIC_API_KEY` | Your Anthropic API key |
 | `RSI_GITHUB_TOKEN` | Your GitHub PAT |
-| `BRAVE_SEARCH_API_KEY` | *(optional)* Brave Search API key |
+| `SEARXNG_URL` | *(optional)* Your self-hosted SearXNG URL |
 
 ### Step 3: Review Configuration
 
@@ -206,7 +209,7 @@ When ready to audit all repos:
 | `Failed to fetch repos` | Check that your GitHub PAT has the correct scopes |
 | `Clone failed` | Ensure the PAT has Contents read access to target repos |
 | `PR creation failed` | Ensure the PAT has Pull requests write access |
-| `Web search unavailable` | Set `BRAVE_SEARCH_API_KEY` secret (optional) |
+| `Web search unavailable` | Public SearXNG instances may be down — set `SEARXNG_URL` to your own instance, or the DuckDuckGo fallback will be used |
 | `Budget limit reached` | Increase `budget_usd` in config or workflow input |
 | `yq not found` | The workflow installs yq automatically; for local runs: `sudo snap install yq` |
 
@@ -224,7 +227,7 @@ sudo chmod +x /usr/local/bin/yq
 # Set environment variables
 export ANTHROPIC_API_KEY="sk-ant-..."
 export RSI_GITHUB_TOKEN="ghp_..."
-export BRAVE_SEARCH_API_KEY="..."        # optional
+export SEARXNG_URL="https://..."          # optional, for self-hosted SearXNG
 export RSI_TEST_MODE="true"              # recommended for dev
 export RSI_BUDGET_USD="5"                # keep low while testing
 

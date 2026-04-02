@@ -54,13 +54,14 @@ description:
     2. Discovers all repos for the user `jvanheerikhuize` via the GitHub API
     3. Clones each target repo into a temporary workspace
     4. Invokes the Claude API with tool use (web search, file reading) to perform
-       a structured audit across five dimensions:
+       a structured audit across six dimensions:
        a. Functional audit — code quality, bugs, test coverage gaps
        b. Non-functional audit — performance, security, maintainability
        c. Feature ideas — new capabilities based on repo purpose and tech stack
        d. Documentation audit — README completeness, inline docs, missing guides
        e. Cross-reference audit — dependency alignment, shared pattern drift,
           opportunities for code sharing between repos
+       f. Web insights — emerging trends, new libraries, techniques, and advisories
     5. Uses web search tool calls to research current best practices, new library
        versions, and industry standards relevant to each repo's tech stack
     6. Stores all research findings in structured log files (JSON Lines format)

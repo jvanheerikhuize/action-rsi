@@ -29,13 +29,21 @@ config_load() {
     TEST_REPOS=("dotfiles" "a-sdlc")
   fi
   if [[ ${#DIMENSIONS[@]} -eq 0 ]]; then
-    DIMENSIONS=("functional" "non_functional" "feature_ideas" "documentation" "cross_references")
+    DIMENSIONS=("functional" "non_functional" "feature_ideas" "documentation" "cross_references" "web_insights")
+  fi
+
+  # SearXNG URL (for web search)
+  local config_searxng
+  config_searxng="$(yq -r '.searxng_url // ""' "$RSI_CONFIG")"
+  if [[ -n "$config_searxng" ]]; then
+    SEARXNG_URL="$config_searxng"
   fi
 
   # Override from environment variables (GitHub Actions inputs)
   TEST_MODE="${RSI_TEST_MODE:-$TEST_MODE}"
   BUDGET_USD="${RSI_BUDGET_USD:-$BUDGET_USD}"
   MODEL="${RSI_MODEL:-$MODEL}"
+  SEARXNG_URL="${SEARXNG_URL:-}"
 
   # Workspace for cloned repos
   WORKSPACE="$(mktemp -d /tmp/rsi-workspace.XXXXXX)"
