@@ -35,17 +35,16 @@ For each finding, the system generates A-SDLC feature spec files (YAML) and open
 
 ### Prerequisites
 
-- Python 3.11+
+- Bash 4.4+, curl, jq, yq, git
 - [Anthropic API key](https://console.anthropic.com/)
 - GitHub PAT with `repo` scope
 
 ### Local run
 
 ```bash
-pip install .
 export ANTHROPIC_API_KEY="sk-ant-..."
 export RSI_GITHUB_TOKEN="ghp_..."
-python -m src.main
+bash src/main.sh
 ```
 
 ### GitHub Actions
@@ -76,22 +75,21 @@ schedule: "0 6 * * 1"             # Monday 06:00 UTC
 ```
 rsi/
 ├── .github/workflows/rsi-audit.yml   # Scheduled GitHub Action
-├── src/                               # Python source
-│   ├── main.py                        # Entrypoint
-│   ├── config.py                      # Configuration loader
-│   ├── discovery.py                   # GitHub API (repos, cloning, PRs)
-│   ├── agent.py                       # Claude API client with tool use
-│   ├── auditor.py                     # Audit orchestrator
+├── src/                               # Bash source
+│   ├── main.sh                        # Entrypoint
+│   ├── config.sh                      # Configuration loader (yq)
+│   ├── discovery.sh                   # GitHub API (repos, cloning, PRs)
+│   ├── agent.sh                       # Claude API client with tool use (curl + jq)
+│   ├── auditor.sh                     # Audit orchestrator
 │   ├── dimensions/                    # Five audit dimension modules
-│   ├── spec_generator.py             # YAML spec file generator
-│   ├── research_logger.py            # JSONL research log writer
-│   ├── pr_manager.py                 # PR creation and management
-│   └── cost_tracker.py               # API cost budget enforcement
-├── templates/                         # Jinja2 spec templates
+│   ├── spec_generator.sh             # YAML spec file generator
+│   ├── research_logger.sh            # JSONL research log writer
+│   ├── pr_manager.sh                 # PR creation and management
+│   └── cost_tracker.sh               # API cost budget enforcement
+├── templates/                         # envsubst/yq spec templates
 ├── logs/research/                     # Web research logs (JSONL)
 ├── specs/features/                    # This project's own specs
-├── rsi.config.yaml                    # Audit configuration
-└── pyproject.toml                     # Python project config
+└── rsi.config.yaml                    # Audit configuration
 ```
 
 ## License
