@@ -17,7 +17,7 @@ source "${SCRIPT_DIR}/spec_generator.sh"
 source "${SCRIPT_DIR}/pr_manager.sh"
 
 main() {
-  log_step "=== RSI Audit Starting ==="
+  banner "RSI — Recursive Self-Improvement" "Audit Pipeline"
 
   # Load and validate config
   config_load
@@ -30,102 +30,148 @@ main() {
   # Trap cleanup on exit
   trap 'config_cleanup; cost_cleanup' EXIT
 
-  # Phase 1: Discover repos
-  log_step "Phase 1: Repo Discovery"
+  # ── Phase 1: Discovery ──────────────────────────────────────────
+  phase 1 "Discovery"
   discovery_fetch_repos
   discovery_filter_repos
 
   if [[ ${#TARGET_REPOS[@]} -eq 0 ]]; then
-    log_warn "No target repos to audit"
+    warn_line "No target repos to audit"
     exit 0
   fi
 
-  # Phase 2: Clone all target repos
-  log_step "Phase 2: Cloning Repos"
+  # ── Phase 2: Clone ──────────────────────────────────────────────
+  phase 2 "Clone"
   local cloned_repos=()
   for repo in "${TARGET_REPOS[@]}"; do
     if discovery_clone_repo "$repo"; then
       cloned_repos+=("$repo")
     else
-      log_warn "Skipping ${repo} — clone failed"
+      fail_line "${repo} — clone failed"
       REPOS_FAILED=$((REPOS_FAILED + 1))
     fi
   done
 
-  # Phase 3: Build ecosystem summaries (for cross-reference dimension)
-  log_step "Phase 3: Building Ecosystem Summaries"
+  # ── Phase 3: Ecosystem summaries ────────────────────────────────
+  phase 3 "Ecosystem Summaries"
   auditor_build_summaries
 
-  # Phase 4: Audit each repo
-  log_step "Phase 4: Running Audits"
+  # ── Phase 4: Audit ──────────────────────────────────────────────
+  phase 4 "Audit"
   for repo in "${cloned_repos[@]}"; do
     # Budget check before starting a new repo
     if ! cost_check_budget; then
-      log_warn "Budget limit reached — skipping ${repo} and remaining repos"
+      warn_line "Budget limit reached — skipping ${repo} and remaining repos"
       REPOS_SKIPPED_BUDGET=$((REPOS_SKIPPED_BUDGET + 1))
       continue
     fi
 
-    log_step "Auditing: ${repo}"
+    repo_header "$repo"
     local repo_dir="${WORKSPACE}/${repo}"
     local findings_file
 
     findings_file="$(auditor_run "$repo_dir" "$repo")" || {
-      log_error "Audit failed for ${repo}"
+      repo_line "${SYM_CROSS} Audit failed"
       REPOS_FAILED=$((REPOS_FAILED + 1))
+      repo_footer
       continue
     }
 
     REPOS_AUDITED=$((REPOS_AUDITED + 1))
 
-    # Phase 5: Generate specs
-    log_step "Generating specs for ${repo}..."
+    # ── Phase 5: Generate specs ─────────────────────────────────
     local specs_created
     specs_created="$(spec_generate_all "$repo_dir" "$repo" "$findings_file")" || {
-      log_error "Spec generation failed for ${repo}"
+      repo_line "${SYM_CROSS} Spec generation failed"
+      repo_footer
       continue
     }
     SPECS_GENERATED=$((SPECS_GENERATED + specs_created))
 
-    # Phase 6: Create PR if specs were generated
+    # ── Phase 6: Create PR if specs were generated ──────────────
     if [[ "$specs_created" -gt 0 ]]; then
-      log_step "Creating PR for ${repo}..."
       local spec_files=()
       while IFS= read -r f; do
         spec_files+=("$f")
       done < <(find "${repo_dir}/specs/features" -name 'FEAT-*.yaml' -newer "$findings_file" 2>/dev/null)
 
       pr_create "$repo_dir" "$repo" "${spec_files[@]}" || {
-        log_error "PR creation failed for ${repo}"
+        repo_line "${SYM_CROSS} PR creation failed"
       }
     fi
+
+    repo_footer
   done
 
-  # Summary
-  log_step "=== RSI Audit Complete ==="
-  log_info "Repos discovered:       $REPOS_DISCOVERED"
-  log_info "Repos audited:          $REPOS_AUDITED"
-  log_info "Specs generated:        $SPECS_GENERATED"
-  log_info "PRs opened:             $PRS_OPENED"
-  log_info "Repos failed:           $REPOS_FAILED"
-  log_info "Repos skipped (budget): $REPOS_SKIPPED_BUDGET"
+  # ── Summary ─────────────────────────────────────────────────────
+  local status_color="$GREEN"
+  local status_label="Audit Complete"
+  if [[ "$REPOS_FAILED" -gt 0 ]]; then
+    status_color="$YELLOW"
+    status_label="Audit Complete (with errors)"
+  fi
+
+  summary_box "$status_color" "$status_label"
+  blank
+
+  stat_line "Repos discovered" "$REPOS_DISCOVERED"
+  stat_line "Repos audited" "$REPOS_AUDITED"
+  stat_line "Findings" "$TOTAL_FINDINGS"
+  stat_line "Specs generated" "$SPECS_GENERATED"
+  stat_line "PRs opened" "$PRS_OPENED"
+  if [[ "$REPOS_FAILED" -gt 0 ]]; then
+    stat_line "Repos failed" "$REPOS_FAILED" "$RED"
+  fi
+  if [[ "$REPOS_SKIPPED_BUDGET" -gt 0 ]]; then
+    stat_line "Skipped (budget)" "$REPOS_SKIPPED_BUDGET" "$YELLOW"
+  fi
+
+  blank
+  echo -e "  ${BOLD}Cost${NC}" >&2
+  hr "─"
   cost_summary
+  blank
 
   # Write GitHub Actions summary if running in CI
   if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+    local total_cost
+    total_cost="$(printf '%.4f' "$(cost_get_total)")"
+    local pct
+    pct="$(awk "BEGIN {printf \"%.0f\", ($(cost_get_total) / $BUDGET_USD) * 100}")"
+
     cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-## RSI Audit Summary — ${AUDIT_DATE}
+## RSI Audit — ${AUDIT_DATE}
+
+**Dimensions:** ${DIMENSIONS[*]//_/ }
+
+### Results
 
 | Metric | Value |
-|--------|-------|
+|--------|------:|
 | Repos discovered | ${REPOS_DISCOVERED} |
 | Repos audited | ${REPOS_AUDITED} |
+| Findings | ${TOTAL_FINDINGS} |
 | Specs generated | ${SPECS_GENERATED} |
 | PRs opened | ${PRS_OPENED} |
-| Repos failed | ${REPOS_FAILED} |
-| Repos skipped (budget) | ${REPOS_SKIPPED_BUDGET} |
-| Total cost | \$$(printf '%.4f' "$(cost_get_total)") USD |
+
+### Cost
+
+| | |
+|---|---|
+| **Total** | \$${total_cost} USD |
+| **Budget used** | ${pct}% of \$${BUDGET_USD} |
+
 EOF
+    # Per-repo cost table
+    if [[ "$(jq '.per_repo | length' "$COST_FILE")" -gt 0 ]]; then
+      echo "### Per-repo breakdown" >> "$GITHUB_STEP_SUMMARY"
+      echo "" >> "$GITHUB_STEP_SUMMARY"
+      echo "| Repo | Cost | Tokens (in/out) |" >> "$GITHUB_STEP_SUMMARY"
+      echo "|------|-----:|----------------:|" >> "$GITHUB_STEP_SUMMARY"
+      jq -r '.per_repo | to_entries | sort_by(-.value.cost_usd)[] |
+        "| \(.key) | $\(.value.cost_usd | tostring | .[0:8]) | \(.value.input_tokens)/\(.value.output_tokens) |"' \
+        "$COST_FILE" >> "$GITHUB_STEP_SUMMARY"
+    fi
   fi
 }
 

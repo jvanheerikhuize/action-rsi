@@ -37,7 +37,6 @@ audit_feature_ideas() {
   local repo_name="$2"
 
   CURRENT_DIMENSION="feature_ideas"
-  log_step "  Running feature ideas audit on ${repo_name}..."
 
   local user_msg="Analyze the '${repo_name}' repository and propose new feature ideas. First understand what the project does by reading the README and exploring the structure. Then use web_search to research what similar projects offer and what best practices exist. Propose 2-4 concrete feature ideas that would add real value."
 

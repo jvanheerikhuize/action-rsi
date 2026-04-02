@@ -60,7 +60,6 @@ audit_web_insights() {
   local repo_name="$2"
 
   CURRENT_DIMENSION="web_insights"
-  log_step "  Running web insights research on ${repo_name}..."
 
   # Include repo summary upfront so the agent can skip file exploration and focus on web research
   local repo_summary=""
@@ -100,7 +99,7 @@ Skip file exploration — go straight to web searches. Perform at least 3 web se
           model: $model,
           sources_consulted: $sources
         }' >> "$log_file"
-      log_info "  Sources logged to ${log_file}"
+      tool_line "Sources logged"
     fi
   fi
 

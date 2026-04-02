@@ -36,7 +36,6 @@ audit_non_functional() {
   local repo_name="$2"
 
   CURRENT_DIMENSION="non_functional"
-  log_step "  Running non-functional audit on ${repo_name}..."
 
   local user_msg="Perform a non-functional audit of the '${repo_name}' repository. Start by understanding the tech stack, then search for security issues, performance concerns, and maintainability debt. Use web_search to look up current best practices for the technologies used."
 

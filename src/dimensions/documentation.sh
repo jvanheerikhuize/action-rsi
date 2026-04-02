@@ -36,7 +36,6 @@ audit_documentation() {
   local repo_name="$2"
 
   CURRENT_DIMENSION="documentation"
-  log_step "  Running documentation audit on ${repo_name}..."
 
   local user_msg="Perform a documentation audit of the '${repo_name}' repository. Check the README, inline comments, and look for missing documentation. Compare what the code does against what the docs say. Identify the most impactful documentation gaps."
 

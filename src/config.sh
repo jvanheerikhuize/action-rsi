@@ -71,6 +71,7 @@ config_load() {
   PRS_OPENED=0
   REPOS_SKIPPED_BUDGET=0
   REPOS_FAILED=0
+  TOTAL_FINDINGS=0
 
   export GITHUB_USERNAME TEST_MODE BUDGET_USD MODEL MAX_SPECS_PER_REPO
   export WORKSPACE AUDIT_DATE LOG_DIR RSI_ROOT
@@ -80,12 +81,12 @@ config_validate() {
   local errors=0
 
   if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
-    log_error "ANTHROPIC_API_KEY is not set"
+    fail_line "ANTHROPIC_API_KEY is not set"
     errors=$((errors + 1))
   fi
 
   if [[ -z "${RSI_GITHUB_TOKEN:-}" ]] && [[ -z "${GITHUB_TOKEN:-}" ]]; then
-    log_error "RSI_GITHUB_TOKEN (or GITHUB_TOKEN) is not set"
+    fail_line "RSI_GITHUB_TOKEN (or GITHUB_TOKEN) is not set"
     errors=$((errors + 1))
   fi
 
@@ -93,43 +94,45 @@ config_validate() {
   GH_TOKEN="${RSI_GITHUB_TOKEN:-${GITHUB_TOKEN:-}}"
   export GH_TOKEN
 
-  if ! command -v jq &>/dev/null; then
-    log_error "jq is required but not installed"
-    errors=$((errors + 1))
-  fi
-
-  if ! command -v yq &>/dev/null; then
-    log_error "yq is required but not installed"
-    errors=$((errors + 1))
-  fi
-
-  if ! command -v curl &>/dev/null; then
-    log_error "curl is required but not installed"
-    errors=$((errors + 1))
+  local deps_ok=true
+  for cmd in jq yq curl git; do
+    if ! command -v "$cmd" &>/dev/null; then
+      fail_line "$cmd is required but not installed"
+      errors=$((errors + 1))
+      deps_ok=false
+    fi
+  done
+  if [[ "$deps_ok" == true ]]; then
+    ok "Dependencies: jq, yq, curl, git"
   fi
 
   return "$errors"
 }
 
 config_summary() {
-  log_info "=== RSI Configuration ==="
-  log_info "GitHub user:    $GITHUB_USERNAME"
-  log_info "Test mode:      $TEST_MODE"
-  log_info "Budget:         \$${BUDGET_USD} USD"
-  log_info "Model:          $MODEL"
-  log_info "Max specs/repo: $MAX_SPECS_PER_REPO"
-  log_info "Dimensions:     ${DIMENSIONS[*]}"
+  local mode_label="production"
+  local repo_info="${DIM}all repos${NC}"
   if [[ "$TEST_MODE" == "true" ]]; then
-    log_info "Test repos:     ${TEST_REPOS[*]}"
+    mode_label="${YELLOW}test${NC}"
+    repo_info="${TEST_REPOS[*]}"
   fi
-  log_info "Workspace:      $WORKSPACE"
-  log_info "Log dir:        $LOG_DIR"
-  log_info "========================="
+
+  local dim_display="${DIMENSIONS[*]}"
+  dim_display="${dim_display//_/ }"
+
+  blank
+  kv "User"       "$GITHUB_USERNAME"
+  kv "Mode"       "$mode_label"
+  kv "Repos"      "$repo_info"
+  kv "Dimensions" "$dim_display"
+  kv "Model"      "$MODEL"
+  kv "Budget"     "\$${BUDGET_USD} USD"
+  kv "Max specs"  "${MAX_SPECS_PER_REPO} per repo"
+  kv "Date"       "$AUDIT_DATE"
 }
 
 config_cleanup() {
   if [[ -d "${WORKSPACE:-}" ]]; then
     rm -rf "$WORKSPACE"
-    log_info "Cleaned up workspace: $WORKSPACE"
   fi
 }

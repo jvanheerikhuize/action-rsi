@@ -57,23 +57,56 @@ cost_get_total() {
   jq -r '.total_cost_usd' "$COST_FILE"
 }
 
+# Print a visual budget bar
+_cost_bar() {
+  local spent="$1" budget="$2"
+  local pct
+  pct="$(awk "BEGIN {p=($spent/$budget)*100; if(p>100) p=100; printf \"%.0f\", p}")"
+  local filled=$(( pct * 20 / 100 ))
+  local empty=$(( 20 - filled ))
+  local bar=""
+  local bar_color="$GREEN"
+  if [[ "$pct" -ge 80 ]]; then bar_color="$RED"
+  elif [[ "$pct" -ge 50 ]]; then bar_color="$YELLOW"
+  fi
+  printf -v bar '%*s' "$filled" ''; bar="${bar// /█}"
+  local empty_bar; printf -v empty_bar '%*s' "$empty" ''; empty_bar="${empty_bar// /░}"
+  echo -e "  ${bar_color}${bar}${DIM}${empty_bar}${NC}  ${bar_color}${pct}%%${NC} of \$${budget}" >&2
+}
+
 # Print cost summary
 cost_summary() {
-  log_info "=== Cost Summary ==="
   local total_input total_output total_cost
   total_input="$(jq -r '.total_input_tokens' "$COST_FILE")"
   total_output="$(jq -r '.total_output_tokens' "$COST_FILE")"
   total_cost="$(jq -r '.total_cost_usd' "$COST_FILE")"
 
-  log_info "Total input tokens:  $total_input"
-  log_info "Total output tokens: $total_output"
-  log_info "Total cost:          \$$(printf '%.4f' "$total_cost") USD"
-  log_info ""
-  log_info "Per-repo breakdown:"
-  jq -r '.per_repo | to_entries[] | "  \(.key): $\(.value.cost_usd | tostring | .[0:8]) (\(.value.input_tokens) in / \(.value.output_tokens) out)"' "$COST_FILE" | while read -r line; do
-    log_info "$line"
+  local formatted_cost
+  formatted_cost="$(printf '%.4f' "$total_cost")"
+
+  # Budget bar
+  _cost_bar "$total_cost" "$BUDGET_USD"
+  blank
+
+  # Token breakdown
+  local input_k output_k
+  input_k="$(awk "BEGIN {printf \"%.1f\", $total_input / 1000}")"
+  output_k="$(awk "BEGIN {printf \"%.1f\", $total_output / 1000}")"
+  stat_line "Total cost" "\$${formatted_cost} USD"
+  stat_line "Tokens" "${input_k}K in / ${output_k}K out"
+
+  # Per-repo breakdown
+  blank
+  echo -e "  ${BOLD}Per-repo breakdown:${NC}" >&2
+  jq -r '.per_repo | to_entries | sort_by(-.value.cost_usd)[] |
+    "\(.key)|\(.value.cost_usd)|\(.value.input_tokens)|\(.value.output_tokens)"' "$COST_FILE" | \
+  while IFS='|' read -r name cost input output; do
+    local fcost input_k output_k
+    fcost="$(printf '%.4f' "$cost")"
+    input_k="$(awk "BEGIN {printf \"%.1f\", $input / 1000}")"
+    output_k="$(awk "BEGIN {printf \"%.1f\", $output / 1000}")"
+    echo -e "    ${SYM_DOT} ${BOLD}${name}${NC}  \$${fcost}  ${DIM}(${input_k}K in / ${output_k}K out)${NC}" >&2
   done
-  log_info "===================="
 }
 
 cost_cleanup() {

@@ -7,8 +7,6 @@ GITHUB_API="https://api.github.com"
 # Fetch all repos for the configured user
 # Populates the global ALL_REPOS array
 discovery_fetch_repos() {
-  log_step "Discovering repos for ${GITHUB_USERNAME}..."
-
   local page=1
   local per_page=100
   ALL_REPOS=()
@@ -41,7 +39,7 @@ discovery_fetch_repos() {
   done
 
   REPOS_DISCOVERED=${#ALL_REPOS[@]}
-  log_info "Discovered $REPOS_DISCOVERED repos"
+  ok "Found ${BOLD}${REPOS_DISCOVERED}${NC} repos on GitHub"
 }
 
 # Filter repos based on test mode, exclusions, etc.
@@ -52,7 +50,6 @@ discovery_filter_repos() {
   for repo in "${ALL_REPOS[@]}"; do
     # Skip excluded repos
     if in_array "$repo" "${EXCLUDE_REPOS[@]+"${EXCLUDE_REPOS[@]}"}"; then
-      log_info "Skipping excluded repo: $repo"
       continue
     fi
 
@@ -66,7 +63,7 @@ discovery_filter_repos() {
     TARGET_REPOS+=("$repo")
   done
 
-  log_info "Target repos (${#TARGET_REPOS[@]}): ${TARGET_REPOS[*]}"
+  arrow "Targeting ${BOLD}${#TARGET_REPOS[@]}${NC} repos: ${TARGET_REPOS[*]}"
 }
 
 # Clone a repo into the workspace
@@ -77,17 +74,18 @@ discovery_clone_repo() {
   REPO_DIR="${WORKSPACE}/${repo}"
 
   if [[ -d "$REPO_DIR" ]]; then
-    log_info "Repo already cloned: $repo"
+    ok "${repo} ${DIM}(cached)${NC}"
     return 0
   fi
 
-  log_info "Cloning ${GITHUB_USERNAME}/${repo}..."
   retry 3 2 git clone --depth 1 --single-branch \
     "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_USERNAME}/${repo}.git" \
     "$REPO_DIR" 2>/dev/null || {
-    log_error "Failed to clone ${repo}"
+    fail_line "${repo}"
     return 1
   }
+
+  ok "$repo"
 }
 
 # Build a lightweight summary of a repo for cross-reference context
@@ -119,6 +117,14 @@ discovery_repo_summary() {
 
   local has_tests="false"
   [[ -d "${repo_dir}/tests" ]] || [[ -d "${repo_dir}/test" ]] && has_tests="true"
+
+  # Display summary line
+  local features=""
+  [[ "$has_ci" == "true" ]] && features+="CI "
+  [[ "$has_specs" == "true" ]] && features+="Specs "
+  [[ "$has_tests" == "true" ]] && features+="Tests "
+  features="${features% }"
+  ok "${repo_name}  ${DIM}${languages:-unknown}${NC}  ${DIM}[${features:-none}]${NC}"
 
   jq -nc \
     --arg name "$repo_name" \

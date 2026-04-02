@@ -37,7 +37,6 @@ audit_cross_references() {
   local repo_name="$2"
 
   CURRENT_DIMENSION="cross_references"
-  log_step "  Running cross-reference audit on ${repo_name}..."
 
   # Build list of other repos for context
   local other_repos=""

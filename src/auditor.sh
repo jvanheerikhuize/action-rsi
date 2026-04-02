@@ -11,6 +11,16 @@ source "${SCRIPT_DIR}/dimensions/documentation.sh"
 source "${SCRIPT_DIR}/dimensions/cross_references.sh"
 source "${SCRIPT_DIR}/dimensions/web_insights.sh"
 
+# Friendly dimension labels
+declare -A DIMENSION_LABELS=(
+  [functional]="Functional"
+  [non_functional]="Non-Functional"
+  [feature_ideas]="Feature Ideas"
+  [documentation]="Documentation"
+  [cross_references]="Cross-References"
+  [web_insights]="Web Insights"
+)
+
 # Run all configured audit dimensions on a single repo
 # Usage: auditor_run <repo_dir> <repo_name>
 # Outputs combined JSON findings to a file at ${WORKSPACE}/.findings/<repo_name>.json
@@ -26,9 +36,12 @@ auditor_run() {
   for dimension in "${DIMENSIONS[@]}"; do
     # Check budget before each dimension
     if ! cost_check_budget; then
-      log_warn "Budget exceeded — skipping remaining dimensions for ${repo_name}"
+      repo_line "${SYM_WARN} ${YELLOW}Budget exceeded — skipping remaining dimensions${NC}"
       break
     fi
+
+    local label="${DIMENSION_LABELS[$dimension]:-$dimension}"
+    repo_line "${SYM_SEARCH} ${BOLD}${label}${NC}"
 
     local dimension_findings=""
     case "$dimension" in
@@ -51,7 +64,7 @@ auditor_run() {
         dimension_findings="$(audit_web_insights "$repo_dir" "$repo_name")" || true
         ;;
       *)
-        log_warn "Unknown dimension: $dimension"
+        repo_line "${SYM_WARN} Unknown dimension: $dimension"
         continue
         ;;
     esac
@@ -60,17 +73,26 @@ auditor_run() {
     if [[ -n "$dimension_findings" ]]; then
       local parsed
       parsed="$(echo "$dimension_findings" | jq '.findings // []' 2>/dev/null)" || {
-        log_warn "Failed to parse ${dimension} findings for ${repo_name}"
-        log_warn "Raw output: $(echo "$dimension_findings" | head -5)"
+        repo_line "  ${SYM_WARN} ${YELLOW}Failed to parse findings${NC}"
         continue
       }
+      local count
+      count="$(echo "$parsed" | jq 'length')"
       all_findings="$(echo "$all_findings" | jq --argjson new "$parsed" '. + $new')"
-      log_info "  ${dimension}: $(echo "$parsed" | jq 'length') finding(s)"
+
+      if [[ "$count" -gt 0 ]]; then
+        repo_line "  ${SYM_CHECK} ${GREEN}${count} finding(s)${NC}"
+      else
+        repo_line "  ${DIM}no findings${NC}"
+      fi
     fi
   done
 
   # Write combined findings
   local findings_file="${findings_dir}/${repo_name}.json"
+  local total
+  total="$(echo "$all_findings" | jq 'length')"
+
   jq -nc \
     --arg repo "$repo_name" \
     --arg date "$AUDIT_DATE" \
@@ -82,14 +104,12 @@ auditor_run() {
       findings: $findings
     }' > "$findings_file"
 
-  log_info "  Total findings for ${repo_name}: $(echo "$all_findings" | jq 'length')"
+  TOTAL_FINDINGS=$((TOTAL_FINDINGS + total))
   echo "$findings_file"
 }
 
 # Build pre-audit summaries for all target repos (lightweight pass)
 auditor_build_summaries() {
-  log_step "Building repo ecosystem summaries..."
-
   local summaries_dir="${WORKSPACE}/.summaries"
   mkdir -p "$summaries_dir"
 
@@ -97,7 +117,6 @@ auditor_build_summaries() {
     local repo_dir="${WORKSPACE}/${repo_name}"
     if [[ -d "$repo_dir" ]]; then
       discovery_repo_summary "$repo_dir" "$repo_name" > "${summaries_dir}/${repo_name}.json"
-      log_info "  Summary built for ${repo_name}"
     fi
   done
 }

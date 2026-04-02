@@ -38,7 +38,6 @@ audit_functional() {
   local repo_name="$2"
 
   CURRENT_DIMENSION="functional"
-  log_step "  Running functional audit on ${repo_name}..."
 
   local user_msg="Perform a functional audit of the '${repo_name}' repository. Start by listing the root directory, then explore key source files. Look for bugs, code quality issues, and test coverage gaps. Be thorough but focus on the most impactful findings."
 

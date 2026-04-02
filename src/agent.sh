@@ -201,7 +201,7 @@ agent_web_search() {
     if [[ -n "$response" ]]; then
       results="$(echo "$response" | jq '[.results[:5] // [] | .[] | {url: .url, title: .title, excerpt: .content}]' 2>/dev/null)" || continue
       if [[ "$(echo "$results" | jq 'length')" -gt 0 ]]; then
-        log_info "  Web search via SearXNG (${instance}): $(echo "$results" | jq 'length') results"
+        search_line "SearXNG (${instance}): $(echo "$results" | jq 'length') results"
         echo "$results"
         return 0
       fi
@@ -209,7 +209,7 @@ agent_web_search() {
   done
 
   # Fallback: DuckDuckGo HTML scraping
-  log_warn "SearXNG unavailable — falling back to DuckDuckGo HTML scraping"
+  log_warn "SearXNG unavailable — using DuckDuckGo fallback"
   results="$(agent_web_search_ddg "$query")"
   echo "$results"
 }
@@ -269,7 +269,7 @@ agent_web_search_ddg() {
   local count
   count="$(echo "$results" | jq 'length' 2>/dev/null)" || count=0
   if [[ "$count" -gt 0 ]]; then
-    log_info "  Web search via DuckDuckGo fallback: ${count} results"
+    search_line "DuckDuckGo: ${count} results"
   fi
 
   echo "$results"
@@ -394,7 +394,9 @@ agent_chat() {
         tool_name="$(echo "$tool_call" | jq -r '.name')"
         tool_input="$(echo "$tool_call" | jq -r '.input | tostring')"
 
-        log_info "  Tool call: ${tool_name} $(echo "$tool_input" | jq -r 'to_entries | map(.key + "=" + (.value | tostring)) | join(", ")' 2>/dev/null || echo "$tool_input")"
+        local tool_args
+        tool_args="$(echo "$tool_input" | jq -r 'to_entries | map(.value | tostring) | join(" ")' 2>/dev/null || echo "")"
+        tool_line "${tool_name} ${tool_args}"
 
         local tool_result
         tool_result="$(agent_execute_tool "$repo_dir" "$tool_name" "$tool_input")"
@@ -423,7 +425,7 @@ agent_chat() {
     fi
   done
 
-  log_warn "Max tool rounds ($MAX_TOOL_ROUNDS) reached for ${repo_name} — forcing final response"
+  tool_line "Reached round limit — requesting final response"
 
   # Force a final response by calling the API without tools
   local request_file

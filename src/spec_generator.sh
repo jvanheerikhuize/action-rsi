@@ -173,7 +173,7 @@ spec_generate() {
     }')"
 
   echo "$spec_json" | yq -P '.' > "$spec_file"
-  log_info "  Generated spec: ${spec_id} — ${title}"
+  repo_line "${SYM_CHECK} ${BOLD}${spec_id}${NC} — ${title} ${DIM}(${priority})${NC}"
   echo "$spec_file"
 }
 
@@ -191,7 +191,7 @@ spec_generate_all() {
   count="$(echo "$findings" | jq 'length')"
 
   if [[ "$count" -eq 0 ]]; then
-    log_info "  No findings for ${repo_name} — no specs to generate"
+    repo_line "${DIM}No findings — no specs to generate${NC}"
     echo "0"
     return 0
   fi
@@ -204,7 +204,7 @@ spec_generate_all() {
 
   # Cap at max specs per repo
   if [[ "$num_groups" -gt "$MAX_SPECS_PER_REPO" ]]; then
-    log_info "  Capping specs at ${MAX_SPECS_PER_REPO} (${num_groups} groups found)"
+    repo_line "${SYM_WARN} Capping at ${MAX_SPECS_PER_REPO} specs (${num_groups} groups found)"
     groups="$(echo "$groups" | jq --argjson max "$MAX_SPECS_PER_REPO" '.[:$max]')"
     num_groups="$MAX_SPECS_PER_REPO"
   fi
