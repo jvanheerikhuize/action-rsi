@@ -1,0 +1,233 @@
+metadata:
+  id: FEAT-0005
+  title: 'SC2034: SYM_DOT appears unused. Verify use (or export if used externally).'
+  version: 1.0.0
+  status: draft
+  priority: medium
+  author: RSI Audit Agent
+  created_at: "2026-04-02"
+  updated_at: "2026-04-02"
+  tags:
+    - rsi-audit
+    - static_analysis
+    - code_quality
+description:
+  summary: 'Automated audit finding: SC2034: SYM_DOT appears unused. Verify use (or export if used externally).'
+  problem_statement: |-
+    - SYM_DOT appears unused. Verify use (or export if used externally).
+    - SYM_BUDGET appears unused. Verify use (or export if used externally).
+    - Expressions don't expand in single quotes, use double quotes for that.
+    - Not following: ./utils.sh was not specified as input (see shellcheck -x).
+    - Not following: ./config.sh was not specified as input (see shellcheck -x).
+    - Not following: ./cost_tracker.sh was not specified as input (see shellcheck -x).
+    - Not following: ./research_logger.sh was not specified as input (see shellcheck -x).
+    - Not following: ./discovery.sh was not specified as input (see shellcheck -x).
+    - Not following: ./static_analysis.sh was not specified as input (see shellcheck -x).
+    - Not following: ./context_builder.sh was not specified as input (see shellcheck -x).
+    - Not following: ./llm_analyzer.sh was not specified as input (see shellcheck -x).
+    - Not following: ./spec_generator.sh was not specified as input (see shellcheck -x).
+    - Not following: ./pr_manager.sh was not specified as input (see shellcheck -x).
+    - Consider using { cmd1; cmd2; } >> file instead of individual redirects.
+    - other_files appears unused. Verify use (or export if used externally).
+    - EXCLUDE_REPOS appears unused. Verify use (or export if used externally).
+    - REPOS_DISCOVERED appears unused. Verify use (or export if used externally).
+    - REPOS_AUDITED appears unused. Verify use (or export if used externally).
+    - SPECS_GENERATED appears unused. Verify use (or export if used externally).
+    - PRS_OPENED appears unused. Verify use (or export if used externally).
+    - REPOS_SKIPPED_BUDGET appears unused. Verify use (or export if used externally).
+    - REPOS_FAILED appears unused. Verify use (or export if used externally).
+    - TOTAL_FINDINGS appears unused. Verify use (or export if used externally).
+    - -gt treats this as an arithmetic expression. Use > to compare as string (or expand explicitly with $((expr))).
+    - -gt treats this as an arithmetic expression. Use > to compare as string (or expand explicitly with $((expr))).
+    - -gt treats this as an arithmetic expression. Use > to compare as string (or expand explicitly with $((expr))).
+    - -gt treats this as an arithmetic expression. Use > to compare as string (or expand explicitly with $((expr))).
+    - finding_title appears unused. Verify use (or export if used externally).
+    - Use semicolon or linefeed before 'then' (or quote to make it literal).
+    - Expansions inside ${..} need to be quoted separately, otherwise they match as patterns.
+    - languages appears unused. Verify use (or export if used externally).
+    - Declare and assign separately to avoid masking return values.
+    - See if you can use ${#variable} instead.
+  proposed_solution: |-
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Fix: {"replacements":[{"column":22,"endColumn":22,"endLine":51,"insertionPoint":"afterEnd","line":51,"precedence":21,"replacement":"\""},{"column":33,"endColumn":33,"endLine":51,"insertionPoint":"beforeStart","line":51,"precedence":21,"replacement":"\""}]}
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+  out_of_scope:
+    - Changes unrelated to the identified findings
+  dependencies: []
+technical_requirements:
+  constraints: []
+  security: []
+acceptance_criteria:
+  - id: AC-001
+    given: The src/utils.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-002
+    given: The src/utils.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-003
+    given: The src/utils.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-004
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-005
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-006
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-007
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-008
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-009
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-010
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-011
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-012
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-013
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-014
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-015
+    given: The src/static_analysis.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-016
+    given: The src/config.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-017
+    given: The src/config.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-018
+    given: The src/config.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-019
+    given: The src/config.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-020
+    given: The src/config.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-021
+    given: The src/config.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-022
+    given: The src/config.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-023
+    given: The src/config.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-024
+    given: The src/spec_generator.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-025
+    given: The src/spec_generator.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-026
+    given: The src/spec_generator.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-027
+    given: The src/spec_generator.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-028
+    given: The src/spec_generator.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-029
+    given: The src/spec_generator.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-030
+    given: The src/context_builder.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: 'Fix: {"replacements":[{"column":22,"endColumn":22,"endLine":51,"insertionPoint":"afterEnd","line":51,"precedence":21,"replacement":"\""},{"column":33,"endColumn":33,"endLine":51,"insertionPoint":"beforeStart","line":51,"precedence":21,"replacement":"\""}]}'
+  - id: AC-031
+    given: The src/context_builder.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-032
+    given: The src/context_builder.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-033
+    given: The src/context_builder.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+technical_notes: 'Files affected: src/config.sh, src/context_builder.sh, src/main.sh, src/spec_generator.sh, src/static_analysis.sh, src/utils.sh'
+testing_requirements:
+  unit_tests: true
+  integration_tests: false
+  e2e_tests: false
+  performance_tests: false
+  test_scenarios:
+    - Verify the fix addresses the identified issue
+rollout:
+  rollout_strategy: manual
+  rollback_plan: Revert the changes introduced by this spec via git revert.
