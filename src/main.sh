@@ -131,7 +131,7 @@ main() {
       title: (.code + ": " + .title),
       description: .description,
       files_affected: [.file],
-      recommendation: (if .fix then "Fix: " + .fix else "Address the " + .source + " finding" end)
+      recommendation: (if .fix then "Fix: " + (.fix | tostring) else "Address the " + .source + " finding" end)
     }]')"
 
     local llm_parsed
