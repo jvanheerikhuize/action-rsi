@@ -1,0 +1,89 @@
+metadata:
+  id: FEAT-0005
+  title: 'SC1091: Not following: ./config.sh was not specified as input (see shellcheck -x).'
+  version: 1.0.0
+  status: draft
+  priority: low
+  author: RSI Audit Agent
+  created_at: "2026-04-02"
+  updated_at: "2026-04-02"
+  tags:
+    - rsi-audit
+    - static_analysis
+    - code_quality
+description:
+  summary: 'Automated audit finding: SC1091: Not following: ./config.sh was not specified as input (see shellcheck -x).'
+  problem_statement: |-
+    - Not following: ./config.sh was not specified as input (see shellcheck -x).
+    - Not following: ./cost_tracker.sh was not specified as input (see shellcheck -x).
+    - Not following: ./research_logger.sh was not specified as input (see shellcheck -x).
+    - Not following: ./discovery.sh was not specified as input (see shellcheck -x).
+    - Not following: ./static_analysis.sh was not specified as input (see shellcheck -x).
+    - Not following: ./context_builder.sh was not specified as input (see shellcheck -x).
+    - Not following: ./llm_analyzer.sh was not specified as input (see shellcheck -x).
+    - Not following: ./spec_generator.sh was not specified as input (see shellcheck -x).
+    - Not following: ./pr_manager.sh was not specified as input (see shellcheck -x).
+  proposed_solution: |-
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+    - Address the shellcheck finding
+  out_of_scope:
+    - Changes unrelated to the identified findings
+  dependencies: []
+technical_requirements:
+  constraints: []
+  security: []
+acceptance_criteria:
+  - id: AC-001
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-002
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-003
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-004
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-005
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-006
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-007
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-008
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+  - id: AC-009
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the shellcheck finding
+technical_notes: 'Files affected: src/main.sh'
+testing_requirements:
+  unit_tests: true
+  integration_tests: false
+  e2e_tests: false
+  performance_tests: false
+  test_scenarios:
+    - Verify the fix addresses the identified issue
+rollout:
+  rollout_strategy: manual
+  rollback_plan: Revert the changes introduced by this spec via git revert.

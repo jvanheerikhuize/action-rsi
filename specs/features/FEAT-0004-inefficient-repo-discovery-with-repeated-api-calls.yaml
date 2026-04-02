@@ -1,0 +1,39 @@
+metadata:
+  id: FEAT-0004
+  title: Inefficient repo discovery with repeated API calls
+  version: 1.0.0
+  status: draft
+  priority: medium
+  author: RSI Audit Agent
+  created_at: "2026-04-02"
+  updated_at: "2026-04-02"
+  tags:
+    - rsi-audit
+    - non_functional
+    - performance
+description:
+  summary: 'Automated audit finding: Inefficient repo discovery with repeated API calls'
+  problem_statement: '- discovery_fetch_repos() in src/discovery.sh makes separate API calls per page but doesn''t cache results or implement exponential backoff. For users with many repos, this could hit GitHub rate limits. The filtering logic in discovery_filter_repos() processes all discovered repos sequentially without early termination when test_mode limits are reached.'
+  proposed_solution: '- Implement response caching with TTL (e.g., 1 hour). Add exponential backoff for rate limit handling. Optimize test_mode filtering to stop discovery early when test_repos list is satisfied. Consider GraphQL API for single-call repo listing with filtering.'
+  out_of_scope:
+    - Changes unrelated to the identified findings
+  dependencies: []
+technical_requirements:
+  constraints: []
+  security: []
+acceptance_criteria:
+  - id: AC-001
+    given: The src/discovery.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Implement response caching with TTL (e.g., 1 hour). Add exponential backoff for rate limit handling. Optimize test_mode filtering to stop discovery early when test_repos list is satisfied. Consider GraphQL API for single-call repo listing with filtering.
+technical_notes: 'Files affected: src/discovery.sh'
+testing_requirements:
+  unit_tests: true
+  integration_tests: false
+  e2e_tests: false
+  performance_tests: false
+  test_scenarios:
+    - Verify the fix addresses the identified issue
+rollout:
+  rollout_strategy: manual
+  rollback_plan: Revert the changes introduced by this spec via git revert.

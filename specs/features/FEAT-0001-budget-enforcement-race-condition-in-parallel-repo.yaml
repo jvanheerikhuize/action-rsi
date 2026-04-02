@@ -1,0 +1,53 @@
+metadata:
+  id: FEAT-0001
+  title: Budget enforcement race condition in parallel repo processing
+  version: 1.0.0
+  status: draft
+  priority: high
+  author: RSI Audit Agent
+  created_at: "2026-04-02"
+  updated_at: "2026-04-02"
+  tags:
+    - rsi-audit
+    - functional
+    - bug
+description:
+  summary: 'Automated audit finding: Budget enforcement race condition in parallel repo processing'
+  problem_statement: |-
+    - In src/main.sh lines 147-154, budget checks are performed sequentially but cost tracking is updated asynchronously in llm_analyze(). If multiple repos are processed concurrently (future enhancement), multiple repos could pass the budget check before any completes, leading to budget overrun. The cost_check_budget function in cost_tracker.sh doesn't account for pending/in-flight costs.
+    - Context builder in src/context_builder.sh has hardcoded limits (CTX_MAX_CHARS=80000, CTX_MAX_FILE_CHARS=8000) but doesn't validate total context size before sending to LLM. Large repos with multiple 8K files could exceed Claude's context window. The _ctx_select_key_files function selects up to 5 files but doesn't account for static analysis findings, web search results, or metadata JSON overhead.
+    - In src/context_builder.sh line 238-250, web search uses DuckDuckGo HTML scraping with fragile regex patterns. Network failures or HTML structure changes cause _ctx_web_search to return empty arrays, but calling code doesn't distinguish between 'no results' and 'search failed'. This could silently degrade web insights quality without user awareness.
+  proposed_solution: |-
+    - Implement atomic budget reservation: reserve estimated cost before LLM call, then adjust actual cost after completion. Add pending_cost tracking to cost_tracker.sh and modify cost_check_budget to include reserved amounts.
+    - Add context size validation in ctx_build() before returning bundle. Implement dynamic file truncation based on remaining context budget. Consider tokenization estimation (4 chars ≈ 1 token) and reserve 20% buffer for LLM response.
+    - Add explicit error handling for network timeouts and HTML parsing failures. Return error status alongside results. Implement fallback to SearXNG instance. Add search result quality metrics to audit summary (e.g., 'web search: 3/3 queries successful').
+  out_of_scope:
+    - Changes unrelated to the identified findings
+  dependencies: []
+technical_requirements:
+  constraints: []
+  security: []
+acceptance_criteria:
+  - id: AC-001
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: 'Implement atomic budget reservation: reserve estimated cost before LLM call, then adjust actual cost after completion. Add pending_cost tracking to cost_tracker.sh and modify cost_check_budget to include reserved amounts.'
+  - id: AC-002
+    given: The src/context_builder.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Add context size validation in ctx_build() before returning bundle. Implement dynamic file truncation based on remaining context budget. Consider tokenization estimation (4 chars ≈ 1 token) and reserve 20% buffer for LLM response.
+  - id: AC-003
+    given: The src/context_builder.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: 'Add explicit error handling for network timeouts and HTML parsing failures. Return error status alongside results. Implement fallback to SearXNG instance. Add search result quality metrics to audit summary (e.g., ''web search: 3/3 queries successful'').'
+technical_notes: 'Files affected: src/context_builder.sh, src/cost_tracker.sh, src/llm_analyzer.sh, src/main.sh'
+testing_requirements:
+  unit_tests: true
+  integration_tests: false
+  e2e_tests: false
+  performance_tests: false
+  test_scenarios:
+    - Verify the fix addresses the identified issue
+rollout:
+  rollout_strategy: manual
+  rollback_plan: Revert the changes introduced by this spec via git revert.
