@@ -103,13 +103,13 @@ discovery_repo_summary() {
   fi
 
   local structure
-  structure="$(find "$repo_dir" -maxdepth 2 -not -path '*/.git/*' -not -name '.git' | head -50 | sed "s|${repo_dir}/||" | sort)"
+  structure="$(find "$repo_dir" -maxdepth 2 -not -path '*/.git/*' -not -name '.git' 2>/dev/null | sed "s|${repo_dir}/||" | sort | head -50)" || true
 
   local languages
   languages="$(find "$repo_dir" -maxdepth 3 -type f -not -path '*/.git/*' \
     \( -name '*.sh' -o -name '*.py' -o -name '*.js' -o -name '*.ts' -o -name '*.yaml' -o -name '*.yml' \
        -o -name '*.json' -o -name '*.html' -o -name '*.css' -o -name '*.go' -o -name '*.rs' \) \
-    2>/dev/null | sed 's/.*\.//' | sort | uniq -c | sort -rn | head -5 | awk '{print $2}' | paste -sd ',' -)"
+    2>/dev/null | sed 's/.*\.//' | sort | uniq -c | sort -rn | head -5 | awk '{print $2}' | paste -sd ',' -)" || true
 
   local has_ci="false"
   [[ -d "${repo_dir}/.github/workflows" ]] && has_ci="true"

@@ -20,9 +20,9 @@ config_load() {
   MAX_SPECS_PER_REPO="$(yq -r '.max_specs_per_repo // 5' "$RSI_CONFIG")"
 
   # Arrays — read into bash arrays
-  mapfile -t TEST_REPOS < <(yq -r '.test_repos[]? // empty' "$RSI_CONFIG")
-  mapfile -t EXCLUDE_REPOS < <(yq -r '.exclude_repos[]? // empty' "$RSI_CONFIG")
-  mapfile -t DIMENSIONS < <(yq -r '.dimensions[]? // empty' "$RSI_CONFIG")
+  mapfile -t TEST_REPOS < <(yq -r '.test_repos[]' "$RSI_CONFIG" 2>/dev/null || true)
+  mapfile -t EXCLUDE_REPOS < <(yq -r '.exclude_repos[]' "$RSI_CONFIG" 2>/dev/null || true)
+  mapfile -t DIMENSIONS < <(yq -r '.dimensions[]' "$RSI_CONFIG" 2>/dev/null || true)
 
   # Defaults if arrays are empty
   if [[ ${#TEST_REPOS[@]} -eq 0 ]]; then
@@ -34,7 +34,7 @@ config_load() {
 
   # SearXNG URL (for web search)
   local config_searxng
-  config_searxng="$(yq -r '.searxng_url // ""' "$RSI_CONFIG")"
+  config_searxng="$(yq -r '.searxng_url // ""' "$RSI_CONFIG" 2>/dev/null || true)"
   if [[ -n "$config_searxng" ]]; then
     SEARXNG_URL="$config_searxng"
   fi
