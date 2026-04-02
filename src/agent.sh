@@ -309,19 +309,29 @@ agent_chat() {
       }' > "$request_file"
 
     # Call Claude API (use @file to avoid shell escaping issues with -d)
-    local response
-    response="$(retry 3 5 curl -sf \
+    local response_file
+    response_file="$(mktemp /tmp/rsi-response.XXXXXX)"
+
+    local http_code
+    http_code="$(retry 3 5 curl -s -w '%{http_code}' -o "$response_file" \
       -H "Content-Type: application/json" \
       -H "x-api-key: ${ANTHROPIC_API_KEY}" \
       -H "anthropic-version: ${CLAUDE_VERSION}" \
       -d "@${request_file}" \
-      "$CLAUDE_API")" || {
-      rm -f "$request_file"
-      log_error "Claude API call failed for ${repo_name} (round $round)"
-      echo '{"error":"API call failed"}'
-      return 1
-    }
+      "$CLAUDE_API")" || http_code="000"
+
     rm -f "$request_file"
+    local response
+    response="$(cat "$response_file")"
+    rm -f "$response_file"
+
+    if [[ "$http_code" != "200" ]]; then
+      local err_msg
+      err_msg="$(echo "$response" | jq -r '.error.message // .error // "unknown error"' 2>/dev/null || echo "$response")"
+      log_error "Claude API returned HTTP ${http_code} for ${repo_name} (round $round): ${err_msg}"
+      echo '{"error":"API call failed","http_code":"'"$http_code"'","detail":"'"$err_msg"'"}'
+      return 1
+    fi
 
     # Track costs
     local input_tokens output_tokens
