@@ -6,7 +6,7 @@ github_username: jvanheerikhuize
 # Test mode (default: true) — only audit test_repos until you're confident
 test_mode: true
 test_repos:
-  - prompt-gallery
+  - rsi
 
 # Repos to skip (e.g., forks, archived, irrelevant)
 exclude_repos:
