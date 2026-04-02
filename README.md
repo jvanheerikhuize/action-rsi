@@ -4,16 +4,18 @@ AI-powered audit system that periodically reviews all repositories for quality, 
 
 ## What it does
 
-A GitHub Action runs on a configurable schedule and uses the Claude API to audit repositories across five dimensions:
+Each audit dimension runs as its own GitHub Action on a staggered schedule — one per day — so you can manage costs per dimension and disable expensive ones independently.
 
-| Dimension | Focus |
-|-----------|-------|
-| **Functional** | Code quality, bugs, test coverage gaps |
-| **Non-functional** | Security, performance, maintainability |
-| **Feature ideas** | New capabilities based on repo purpose and tech stack |
-| **Documentation** | README completeness, inline docs, missing guides |
-| **Cross-references** | Shared patterns, dependency alignment, ecosystem drift |
-| **Web insights** | Emerging trends, new libraries, techniques, and advisories via web research |
+| Dimension | Schedule | Focus |
+|-----------|----------|-------|
+| **Functional** | Monday | Code quality, bugs, test coverage gaps |
+| **Non-functional** | Tuesday | Security, performance, maintainability |
+| **Feature ideas** | Wednesday | New capabilities based on repo purpose and tech stack |
+| **Documentation** | Thursday | README completeness, inline docs, missing guides |
+| **Cross-references** | Friday | Shared patterns, dependency alignment, ecosystem drift |
+| **Web insights** | Saturday | Emerging trends, new libraries, techniques, and advisories via web research |
+
+Each dimension has its own $2 budget cap. You can also trigger any combination manually via the main workflow (comma-separated: `functional,documentation`).
 
 For each finding, the system generates A-SDLC feature spec files (YAML) and opens a pull request in the target repository. Web research on industry best practices is logged for traceability.
 
@@ -154,17 +156,20 @@ max_specs_per_repo: 5             # cap on specs per repo
 ### Step 4: First Run (Manual Trigger)
 
 1. Go to **Actions** tab in the `rsi` repo on GitHub
-2. Select the **RSI Audit** workflow
+2. Pick a single dimension to start cheap, e.g. **RSI: Documentation Audit**
 3. Click **Run workflow**
 4. Set inputs:
    - **test_mode**: `true`
-   - **budget_usd**: `5` (conservative for first run)
+   - **budget_usd**: `2`
 5. Click **Run workflow**
 6. Watch the run logs to verify:
    - Repos are discovered and cloned
-   - Claude API is called for each dimension
+   - Claude API is called for the dimension
    - Specs are generated as valid YAML
    - PRs are opened in the target repos
+
+You can also use the main **RSI Audit** workflow with a specific dimension:
+- **dimensions**: `functional` (single) or `functional,documentation` (multiple) or `all`
 
 ### Step 5: Review Output
 
@@ -180,14 +185,18 @@ After the run completes:
 
 ### Step 6: Enable Scheduled Runs
 
-Once you're satisfied with the output quality:
+Each dimension has its own schedule (one per day, staggered to spread costs):
 
-1. The cron schedule is already configured in `.github/workflows/rsi-audit.yml`:
-   ```yaml
-   schedule:
-     - cron: '0 6 * * 1'  # Every Monday at 06:00 UTC
-   ```
-2. The workflow will run automatically — no further action needed
+| Workflow | Day | File |
+|----------|-----|------|
+| Functional | Monday | `dimension-functional.yml` |
+| Non-functional | Tuesday | `dimension-non-functional.yml` |
+| Feature ideas | Wednesday | `dimension-feature-ideas.yml` |
+| Documentation | Thursday | `dimension-documentation.yml` |
+| Cross-references | Friday | `dimension-cross-references.yml` |
+| Web insights | Saturday | `dimension-web-insights.yml` |
+
+To disable a dimension: comment out its `schedule` trigger in the workflow file. Each has its own $2 budget cap.
 
 ### Step 7: Graduate to Full Mode
 
@@ -237,15 +246,15 @@ bash src/main.sh
 
 ### Cost Estimation
 
-Approximate costs per run (Claude Sonnet):
+Approximate costs per dimension per run (Claude Sonnet, 2 test repos):
 
-| Scope | Repos | Estimated Cost |
-|-------|-------|----------------|
-| Test mode | 2 repos | $1 – $3 |
-| Small batch | 5 repos | $3 – $7 |
-| Full (all 19) | 19 repos | $8 – $20 |
+| Dimension | Estimated Cost | Notes |
+|-----------|----------------|-------|
+| Single dimension | $0.10 – $0.50 | 1 API session per repo |
+| All 6 dimensions | $0.50 – $2.00 | For 2 repos in test mode |
+| Full (all 19 repos, all dimensions) | $5 – $15 | Spread across 6 days = ~$1-2/day |
 
-Actual cost depends on repo size, number of tool calls, and findings. The budget cap ensures you never exceed your limit.
+Each dimension workflow has its own $2 budget cap. By splitting across days, you stay under rate limits and spread costs to ~$1-2/day instead of $10+ in one burst.
 
 ## License
 

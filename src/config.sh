@@ -45,6 +45,17 @@ config_load() {
   MODEL="${RSI_MODEL:-$MODEL}"
   SEARXNG_URL="${SEARXNG_URL:-}"
 
+  # Override dimensions from env var (comma-separated or "all")
+  if [[ -n "${RSI_DIMENSIONS:-}" && "${RSI_DIMENSIONS}" != "all" ]]; then
+    IFS=',' read -ra DIMENSIONS <<< "$RSI_DIMENSIONS"
+    # Trim whitespace from each dimension
+    local trimmed=()
+    for d in "${DIMENSIONS[@]}"; do
+      trimmed+=("$(echo "$d" | xargs)")
+    done
+    DIMENSIONS=("${trimmed[@]}")
+  fi
+
   # Workspace for cloned repos
   WORKSPACE="$(mktemp -d /tmp/rsi-workspace.XXXXXX)"
 

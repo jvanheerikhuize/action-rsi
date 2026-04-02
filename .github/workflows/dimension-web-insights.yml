@@ -1,0 +1,24 @@
+name: "RSI: Web Insights"
+
+on:
+  schedule:
+    - cron: '0 6 * * 6'  # Saturday 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Test mode (only audit test repos)'
+        type: boolean
+        default: true
+      budget_usd:
+        description: 'Budget cap in USD'
+        type: number
+        default: 2
+
+jobs:
+  web_insights:
+    uses: ./.github/workflows/rsi-audit.yml
+    with:
+      dimensions: web_insights
+      test_mode: ${{ inputs.test_mode || true }}
+      budget_usd: ${{ inputs.budget_usd || 2 }}
+    secrets: inherit

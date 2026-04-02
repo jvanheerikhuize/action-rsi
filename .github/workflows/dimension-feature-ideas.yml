@@ -1,0 +1,24 @@
+name: "RSI: Feature Ideas"
+
+on:
+  schedule:
+    - cron: '0 6 * * 3'  # Wednesday 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Test mode (only audit test repos)'
+        type: boolean
+        default: true
+      budget_usd:
+        description: 'Budget cap in USD'
+        type: number
+        default: 2
+
+jobs:
+  feature_ideas:
+    uses: ./.github/workflows/rsi-audit.yml
+    with:
+      dimensions: feature_ideas
+      test_mode: ${{ inputs.test_mode || true }}
+      budget_usd: ${{ inputs.budget_usd || 2 }}
+    secrets: inherit

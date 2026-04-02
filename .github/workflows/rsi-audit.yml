@@ -1,10 +1,12 @@
 name: RSI Audit
 
 on:
-  schedule:
-   # - cron: '0 6 * * 1'  # Weekly Monday 06:00 UTC
   workflow_dispatch:
     inputs:
+      dimensions:
+        description: 'Dimensions to run (comma-separated, or "all")'
+        type: string
+        default: 'all'
       test_mode:
         description: 'Run in test mode (only audit test repos)'
         type: boolean
@@ -13,6 +15,24 @@ on:
         description: 'Budget cap in USD'
         type: number
         default: 10
+  workflow_call:
+    inputs:
+      dimensions:
+        type: string
+        required: true
+      test_mode:
+        type: boolean
+        default: true
+      budget_usd:
+        type: number
+        default: 2
+    secrets:
+      ANTHROPIC_API_KEY:
+        required: true
+      RSI_GITHUB_TOKEN:
+        required: true
+      SEARXNG_URL:
+        required: false
 
 permissions:
   contents: write
@@ -20,7 +40,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 240  # 4 hours max
+    timeout-minutes: 120
 
     steps:
       - name: Checkout RSI repo
@@ -31,22 +51,14 @@ jobs:
           sudo wget -qO /usr/local/bin/yq \
             https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
-          yq --version
-
-      - name: Verify tools
-        run: |
-          echo "bash: $(bash --version | head -1)"
-          echo "curl: $(curl --version | head -1)"
-          echo "jq:   $(jq --version)"
-          echo "yq:   $(yq --version)"
-          echo "git:  $(git --version)"
 
       - name: Run RSI Audit
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           RSI_GITHUB_TOKEN: ${{ secrets.RSI_GITHUB_TOKEN }}
-          RSI_TEST_MODE: ${{ inputs.test_mode || 'true' }}
+          RSI_TEST_MODE: ${{ inputs.test_mode }}
           RSI_BUDGET_USD: ${{ inputs.budget_usd || '10' }}
+          RSI_DIMENSIONS: ${{ inputs.dimensions || 'all' }}
           SEARXNG_URL: ${{ secrets.SEARXNG_URL }}
         run: bash src/main.sh
 
@@ -54,10 +66,13 @@ jobs:
         run: |
           git config user.name "RSI Audit Agent"
           git config user.email "rsi-audit@noreply.github.com"
+          git pull --rebase origin main 2>/dev/null || true
           if [[ -n "$(git status logs/ --porcelain 2>/dev/null)" ]]; then
             git add logs/
-            git commit -m "RSI: research logs for $(date -u +%Y-%m-%d)"
+            git commit -m "RSI: research logs for $(date -u +%Y-%m-%d) [${RSI_DIMENSIONS:-all}]"
             git push
           else
             echo "No new research logs to commit"
           fi
+        env:
+          RSI_DIMENSIONS: ${{ inputs.dimensions || 'all' }}
