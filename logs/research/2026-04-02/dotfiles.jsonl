@@ -1,0 +1,10 @@
+{"timestamp":"2026-04-02T16:46:06Z","type":"agent_call","repo":"dotfiles","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":1162,"output":82}}
+{"timestamp":"2026-04-02T16:46:08Z","type":"agent_call","repo":"dotfiles","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":1830,"output":65}}
+{"timestamp":"2026-04-02T16:46:10Z","type":"agent_call","repo":"dotfiles","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":3247,"output":69}}
+{"timestamp":"2026-04-02T16:46:22Z","type":"agent_call","repo":"dotfiles","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":5817,"output":66}}
+{"timestamp":"2026-04-02T16:46:34Z","type":"agent_call","repo":"dotfiles","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":6137,"output":57}}
+{"timestamp":"2026-04-02T16:46:46Z","type":"agent_call","repo":"dotfiles","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":7570,"output":57}}
+{"timestamp":"2026-04-02T16:46:59Z","type":"agent_call","repo":"dotfiles","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":10316,"output":58}}
+{"timestamp":"2026-04-02T16:47:31Z","type":"agent_call","repo":"dotfiles","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":11544,"output":66}}
+{"timestamp":"2026-04-02T16:47:44Z","type":"agent_call","repo":"dotfiles","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":11793,"output":57}}
+{"timestamp":"2026-04-02T16:48:16Z","type":"agent_call","repo":"dotfiles","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":12145,"output":57}}

@@ -5,3 +5,13 @@
 {"timestamp":"2026-04-02T15:36:01Z","type":"agent_call","repo":"a-sdlc","dimension":"functional","model":"claude-sonnet-4-20250514","tokens_used":{"input":7424,"output":59}}
 {"timestamp":"2026-04-02T15:36:03Z","type":"agent_call","repo":"a-sdlc","dimension":"functional","model":"claude-sonnet-4-20250514","tokens_used":{"input":10400,"output":53}}
 {"timestamp":"2026-04-02T15:36:05Z","type":"agent_call","repo":"a-sdlc","dimension":"functional","model":"claude-sonnet-4-20250514","tokens_used":{"input":10678,"output":71}}
+{"timestamp":"2026-04-02T16:44:01Z","type":"agent_call","repo":"a-sdlc","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":1165,"output":87}}
+{"timestamp":"2026-04-02T16:44:02Z","type":"agent_call","repo":"a-sdlc","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":2006,"output":65}}
+{"timestamp":"2026-04-02T16:44:04Z","type":"agent_call","repo":"a-sdlc","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":4714,"output":69}}
+{"timestamp":"2026-04-02T16:44:08Z","type":"agent_call","repo":"a-sdlc","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":7221,"output":67}}
+{"timestamp":"2026-04-02T16:44:10Z","type":"agent_call","repo":"a-sdlc","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":9826,"output":68}}
+{"timestamp":"2026-04-02T16:44:13Z","type":"agent_call","repo":"a-sdlc","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":10147,"output":57}}
+{"timestamp":"2026-04-02T16:44:16Z","type":"agent_call","repo":"a-sdlc","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":11433,"output":72}}
+{"timestamp":"2026-04-02T16:44:48Z","type":"agent_call","repo":"a-sdlc","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":13896,"output":70}}
+{"timestamp":"2026-04-02T16:45:21Z","type":"agent_call","repo":"a-sdlc","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":14689,"output":63}}
+{"timestamp":"2026-04-02T16:45:33Z","type":"agent_call","repo":"a-sdlc","dimension":"documentation","model":"claude-sonnet-4-20250514","tokens_used":{"input":15441,"output":62}}
