@@ -36,6 +36,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   audit:
@@ -72,6 +73,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           RSI_GITHUB_TOKEN: ${{ secrets.RSI_GITHUB_TOKEN }}
+          GITHUB_ACTIONS_TOKEN: ${{ github.token }}
           RSI_TEST_MODE: ${{ inputs.test_mode }}
           RSI_BUDGET_USD: ${{ inputs.budget_usd || '10' }}
           RSI_DIMENSIONS: ${{ inputs.dimensions || 'all' }}
