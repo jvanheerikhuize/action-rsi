@@ -13,7 +13,7 @@ spec_next_id() {
     while IFS= read -r file; do
       local num
       num="$(basename "$file" | grep -oP 'FEAT-\K[0-9]+' || echo 0)"
-      if [[ "$num" -gt "$max_id" ]]; then
+      if [[ "10#$num" -gt "10#$max_id" ]]; then
         max_id="$num"
       fi
     done < <(find "${repo_dir}/specs/features" -name 'FEAT-*.yaml' 2>/dev/null)
@@ -24,12 +24,12 @@ spec_next_id() {
     local config_max
     config_max="$(yq -r '.specifications[]?.id // "" ' "${repo_dir}/specs.config.yaml" 2>/dev/null \
       | grep -oP 'FEAT-\K[0-9]+' | sort -n | tail -1)" || config_max=0
-    if [[ "${config_max:-0}" -gt "$max_id" ]]; then
+    if [[ "10#${config_max:-0}" -gt "10#$max_id" ]]; then
       max_id="$config_max"
     fi
   fi
 
-  printf "FEAT-%04d" $((max_id + 1))
+  printf "FEAT-%04d" $((10#$max_id + 1))
 }
 
 # Group related findings into spec-sized chunks
@@ -43,7 +43,7 @@ spec_group_findings() {
     group_by(.category) |
     map({
       category: .[0].category,
-      dimension: .[0].dimension // (.[0].category),
+      dimension: (if .[0].dimension then .[0].dimension else .[0].category end),
       severity: (map(.severity) | if any(. == "high") then "high"
                  elif any(. == "medium") then "medium"
                  else "low" end),
@@ -217,7 +217,7 @@ spec_generate_all() {
     local group
     group="$(echo "$groups" | jq ".[$i]")"
     local spec_id
-    spec_id="$(printf "FEAT-%04d" $((next_id_num + i)))"
+    spec_id="$(printf "FEAT-%04d" $((10#$next_id_num + i)))"
 
     spec_generate "$repo_dir" "$repo_name" "$spec_id" "$group" || {
       log_warn "Failed to generate spec ${spec_id} for ${repo_name}"
