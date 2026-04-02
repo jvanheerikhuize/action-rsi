@@ -174,7 +174,6 @@ spec_generate() {
 
   echo "$spec_json" | yq -P '.' > "$spec_file"
   repo_line "${SYM_CHECK} ${BOLD}${spec_id}${NC} — ${title} ${DIM}(${priority})${NC}"
-  echo "$spec_file"
 }
 
 # Generate specs for a repo from its findings file
