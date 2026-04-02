@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # main.sh — RSI (Recursive Self-Improvement) audit entrypoint
-# Orchestrates: discovery → summary → audit → spec generation → PR creation
+# v2: static analysis → context builder → single-shot LLM
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,13 +11,16 @@ source "${SCRIPT_DIR}/config.sh"
 source "${SCRIPT_DIR}/cost_tracker.sh"
 source "${SCRIPT_DIR}/research_logger.sh"
 source "${SCRIPT_DIR}/discovery.sh"
+source "${SCRIPT_DIR}/static_analysis.sh"
+source "${SCRIPT_DIR}/context_builder.sh"
+source "${SCRIPT_DIR}/llm_analyzer.sh"
 source "${SCRIPT_DIR}/agent.sh"
 source "${SCRIPT_DIR}/auditor.sh"
 source "${SCRIPT_DIR}/spec_generator.sh"
 source "${SCRIPT_DIR}/pr_manager.sh"
 
 main() {
-  banner "RSI — Recursive Self-Improvement" "Audit Pipeline"
+  banner "RSI — Recursive Self-Improvement" "v2 Audit Pipeline"
 
   # Load and validate config
   config_load
@@ -56,10 +59,38 @@ main() {
   phase 3 "Ecosystem Summaries"
   auditor_build_summaries
 
-  # ── Phase 4: Audit ──────────────────────────────────────────────
-  phase 4 "Audit"
+  # ── Phase 4: Static Analysis (Layer 1 — FREE) ──────────────────
+  phase 4 "Static Analysis"
+  local -A static_results=()
+  local total_static_findings=0
   for repo in "${cloned_repos[@]}"; do
-    # Budget check before starting a new repo
+    repo_header "$repo"
+    local repo_dir="${WORKSPACE}/${repo}"
+    local sa_output
+    sa_output="$(sa_run "$repo_dir" "$repo")"
+    static_results[$repo]="$sa_output"
+    local count; count="$(echo "$sa_output" | jq '.total_findings')"
+    total_static_findings=$((total_static_findings + count))
+    repo_footer
+  done
+  arrow "Total static findings: ${BOLD}${total_static_findings}${NC} ${DIM}(free)${NC}"
+
+  # ── Phase 5: Context Building (Layer 2) ─────────────────────────
+  phase 5 "Context Building"
+  local -A context_bundles=()
+  for repo in "${cloned_repos[@]}"; do
+    repo_header "$repo"
+    local repo_dir="${WORKSPACE}/${repo}"
+    local bundle
+    bundle="$(ctx_build "$repo_dir" "$repo" "${static_results[$repo]}")"
+    context_bundles[$repo]="$bundle"
+    repo_footer
+  done
+
+  # ── Phase 6: LLM Analysis (Layer 3 — single-shot) ──────────────
+  phase 6 "LLM Analysis"
+  for repo in "${cloned_repos[@]}"; do
+    # Budget check
     if ! cost_check_budget; then
       warn_line "Budget limit reached — skipping ${repo} and remaining repos"
       REPOS_SKIPPED_BUDGET=$((REPOS_SKIPPED_BUDGET + 1))
@@ -68,10 +99,11 @@ main() {
 
     repo_header "$repo"
     local repo_dir="${WORKSPACE}/${repo}"
-    local findings_file
 
-    findings_file="$(auditor_run "$repo_dir" "$repo")" || {
-      repo_line "${SYM_CROSS} Audit failed"
+    # Single-shot LLM call
+    local llm_findings
+    llm_findings="$(llm_analyze "$repo" "${context_bundles[$repo]}")" || {
+      repo_line "${SYM_CROSS} LLM analysis failed"
       REPOS_FAILED=$((REPOS_FAILED + 1))
       repo_footer
       continue
@@ -79,7 +111,44 @@ main() {
 
     REPOS_AUDITED=$((REPOS_AUDITED + 1))
 
-    # ── Phase 5: Generate specs ─────────────────────────────────
+    # Merge static + LLM findings
+    local static_as_findings
+    static_as_findings="$(echo "${static_results[$repo]}" | jq '[.findings[] | {
+      dimension: "static_analysis",
+      severity: .severity,
+      category: .category,
+      title: (.code + ": " + .title),
+      description: .description,
+      files_affected: [.file],
+      recommendation: (if .fix then "Fix: " + .fix else "Address the " + .source + " finding" end)
+    }]')"
+
+    local llm_parsed
+    llm_parsed="$(echo "$llm_findings" | jq '.findings // []' 2>/dev/null)" || llm_parsed="[]"
+
+    local all_findings
+    all_findings="$(jq -nc --argjson static "$static_as_findings" --argjson llm "$llm_parsed" '$static + $llm')"
+
+    local total_count
+    total_count="$(echo "$all_findings" | jq 'length')"
+    TOTAL_FINDINGS=$((TOTAL_FINDINGS + total_count))
+
+    # Write combined findings file
+    local findings_dir="${WORKSPACE}/.findings"
+    mkdir -p "$findings_dir"
+    local findings_file="${findings_dir}/${repo}.json"
+    jq -nc \
+      --arg repo "$repo" \
+      --arg date "$AUDIT_DATE" \
+      --argjson findings "$all_findings" \
+      '{
+        repo: $repo,
+        audit_date: $date,
+        total_findings: ($findings | length),
+        findings: $findings
+      }' > "$findings_file"
+
+    # ── Generate specs ──────────────────────────────────────────
     local specs_created
     specs_created="$(spec_generate_all "$repo_dir" "$repo" "$findings_file")" || {
       repo_line "${SYM_CROSS} Spec generation failed"
@@ -88,7 +157,7 @@ main() {
     }
     SPECS_GENERATED=$((SPECS_GENERATED + specs_created))
 
-    # ── Phase 6: Create PR if specs were generated ──────────────
+    # ── Create PR if specs were generated ───────────────────────
     if [[ "$specs_created" -gt 0 ]]; then
       local spec_files=()
       while IFS= read -r f; do
@@ -116,7 +185,9 @@ main() {
 
   stat_line "Repos discovered" "$REPOS_DISCOVERED"
   stat_line "Repos audited" "$REPOS_AUDITED"
-  stat_line "Findings" "$TOTAL_FINDINGS"
+  stat_line "Static findings" "${total_static_findings} (free)"
+  stat_line "LLM findings" "$((TOTAL_FINDINGS - total_static_findings))"
+  stat_line "Total findings" "$TOTAL_FINDINGS"
   stat_line "Specs generated" "$SPECS_GENERATED"
   stat_line "PRs opened" "$PRS_OPENED"
   if [[ "$REPOS_FAILED" -gt 0 ]]; then
@@ -140,7 +211,7 @@ main() {
     pct="$(awk "BEGIN {printf \"%.0f\", ($(cost_get_total) / $BUDGET_USD) * 100}")"
 
     cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-## RSI Audit — ${AUDIT_DATE}
+## RSI v2 Audit — ${AUDIT_DATE}
 
 **Dimensions:** ${DIMENSIONS[*]//_/ }
 
@@ -150,7 +221,9 @@ main() {
 |--------|------:|
 | Repos discovered | ${REPOS_DISCOVERED} |
 | Repos audited | ${REPOS_AUDITED} |
-| Findings | ${TOTAL_FINDINGS} |
+| Static findings (free) | ${total_static_findings} |
+| LLM findings | $((TOTAL_FINDINGS - total_static_findings)) |
+| Total findings | ${TOTAL_FINDINGS} |
 | Specs generated | ${SPECS_GENERATED} |
 | PRs opened | ${PRS_OPENED} |
 
@@ -160,6 +233,7 @@ main() {
 |---|---|
 | **Total** | \$${total_cost} USD |
 | **Budget used** | ${pct}% of \$${BUDGET_USD} |
+| **Architecture** | v2 (static + single-shot LLM) |
 
 EOF
     # Per-repo cost table

@@ -46,11 +46,27 @@ jobs:
       - name: Checkout RSI repo
         uses: actions/checkout@v4
 
-      - name: Install yq
+      - name: Install tools
         run: |
           sudo wget -qO /usr/local/bin/yq \
             https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
+
+          # Static analysis tools (Layer 1)
+          # ShellCheck
+          SC_TMP="$(mktemp -d)"
+          curl -sL https://github.com/koalaman/shellcheck/releases/download/v0.10.0/shellcheck-v0.10.0.linux.x86_64.tar.xz \
+            | tar xJ -C "$SC_TMP"
+          sudo cp "${SC_TMP}/shellcheck-v0.10.0/shellcheck" /usr/local/bin/
+          rm -rf "$SC_TMP"
+
+          # gitleaks
+          curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz \
+            | sudo tar xz -C /usr/local/bin/ gitleaks
+
+          # trivy
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sudo sh -s -- -b /usr/local/bin
 
       - name: Run RSI Audit
         env:
