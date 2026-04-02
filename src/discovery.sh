@@ -7,9 +7,18 @@ GITHUB_API="https://api.github.com"
 # Fetch all repos for the configured user
 # Populates the global ALL_REPOS array
 discovery_fetch_repos() {
+  ALL_REPOS=()
+
+  # In test mode, skip the API call entirely — use test_repos directly
+  if [[ "$TEST_MODE" == "true" ]]; then
+    ALL_REPOS=("${TEST_REPOS[@]}")
+    REPOS_DISCOVERED=${#ALL_REPOS[@]}
+    ok "Test mode — using ${BOLD}${REPOS_DISCOVERED}${NC} configured test repos"
+    return 0
+  fi
+
   local page=1
   local per_page=100
-  ALL_REPOS=()
 
   while true; do
     local response

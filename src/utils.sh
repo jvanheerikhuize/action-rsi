@@ -170,6 +170,11 @@ in_array() {
   return 1
 }
 
+# Mask sensitive tokens in a string (for safe logging)
+mask_secrets() {
+  sed -E 's/sk-ant-[A-Za-z0-9_-]+/sk-ant-***/g; s/ghp_[A-Za-z0-9]+/ghp_***/g; s/gho_[A-Za-z0-9]+/gho_***/g; s/github_pat_[A-Za-z0-9_]+/github_pat_***/g'
+}
+
 # Escape a string for safe JSON embedding
 json_escape() {
   local str="$1"

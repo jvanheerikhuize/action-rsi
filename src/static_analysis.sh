@@ -124,7 +124,7 @@ _sa_run_security_scan() {
     local matches
     matches="$(grep -rn --include='*.sh' --include='*.yaml' --include='*.yml' --include='*.conf' \
       -E "$pattern" "$repo_dir" 2>/dev/null \
-      | grep -v '/.git/' | head -20)" || continue
+      | grep -v '/.git/' | grep -v 'static_analysis\.sh' | grep -v '/specs/' | head -20)" || continue
 
     while IFS= read -r match; do
       [[ -z "$match" ]] && continue

@@ -5,17 +5,26 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck disable=SC1091
 # Source all modules
+# shellcheck source=utils.sh
 source "${SCRIPT_DIR}/utils.sh"
+# shellcheck source=config.sh
 source "${SCRIPT_DIR}/config.sh"
+# shellcheck source=cost_tracker.sh
 source "${SCRIPT_DIR}/cost_tracker.sh"
+# shellcheck source=research_logger.sh
 source "${SCRIPT_DIR}/research_logger.sh"
+# shellcheck source=discovery.sh
 source "${SCRIPT_DIR}/discovery.sh"
+# shellcheck source=static_analysis.sh
 source "${SCRIPT_DIR}/static_analysis.sh"
+# shellcheck source=context_builder.sh
 source "${SCRIPT_DIR}/context_builder.sh"
+# shellcheck source=llm_analyzer.sh
 source "${SCRIPT_DIR}/llm_analyzer.sh"
+# shellcheck source=spec_generator.sh
 source "${SCRIPT_DIR}/spec_generator.sh"
+# shellcheck source=pr_manager.sh
 source "${SCRIPT_DIR}/pr_manager.sh"
 
 # Build ecosystem summaries for all target repos

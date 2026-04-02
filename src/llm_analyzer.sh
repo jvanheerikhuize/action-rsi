@@ -163,8 +163,8 @@ llm_analyze() {
 
   if [[ "$http_code" != "200" ]]; then
     local err_msg
-    err_msg="$(echo "$response" | jq -r '.error.message // .error // "unknown error"' 2>/dev/null || echo "$response")"
-    log_error "Claude API returned HTTP ${http_code} for ${repo_name}: ${err_msg}"
+    err_msg="$(echo "$response" | jq -r '.error.message // .error // "unknown error"' 2>/dev/null || echo "$response" | mask_secrets)"
+    log_error "Claude API returned HTTP ${http_code} for ${repo_name}: $(echo "${err_msg}" | mask_secrets)"
     echo '{"findings":[],"summary":"API call failed"}'
     return 1
   fi
@@ -199,7 +199,7 @@ llm_analyze() {
     echo "$text_response"
   else
     repo_line "  ${SYM_WARN} ${YELLOW}Failed to parse LLM response${NC}"
-    log_warn "Raw LLM output (first 200 chars): $(echo "$text_response" | head -c 200)"
+    log_warn "Raw LLM output (first 200 chars): $(echo "$text_response" | head -c 200 | mask_secrets)"
     echo '{"findings":[],"summary":"Failed to parse LLM response"}'
   fi
 }

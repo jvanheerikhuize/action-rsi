@@ -271,10 +271,33 @@ ctx_build() {
       web_research: $web_research
     }')"
 
-  # Report context size
+  # Validate and report context size
   local bundle_chars=${#bundle}
   local approx_tokens=$((bundle_chars / 4))
-  repo_line "  ${SYM_CHECK} Context: ~${approx_tokens} tokens ${DIM}(${#key_files_json} files, $(echo "$web_results" | jq 'length') searches)${NC}"
+  local max_tokens=$((CTX_MAX_CHARS / 4))
+
+  if [[ $bundle_chars -gt $CTX_MAX_CHARS ]]; then
+    log_warn "Context bundle (${approx_tokens} tokens) exceeds limit (${max_tokens} tokens) — truncating key files"
+    # Re-truncate key files to fit within budget
+    local overhead=$((bundle_chars - CTX_MAX_CHARS))
+    local per_file_cut=$((overhead / CTX_MAX_FILES + 1))
+    key_files_json="$(echo "$key_files_json" | jq --argjson cut "$per_file_cut" \
+      '[.[] | .content = .content[:(-$cut)]]')"
+    bundle="$(echo "$bundle" | jq --argjson kf "$key_files_json" '.key_files = $kf')"
+    bundle_chars=${#bundle}
+    approx_tokens=$((bundle_chars / 4))
+  fi
+
+  # Web search success tracking
+  local search_count=0 search_success=0
+  if [[ "$web_results" != "[]" ]]; then
+    search_count="$(echo "$web_results" | jq 'length')"
+    search_success="$(echo "$web_results" | jq '[.[] | select(.results | length > 0)] | length')"
+  fi
+
+  local file_count
+  file_count="$(echo "$key_files_json" | jq 'length')"
+  repo_line "  ${SYM_CHECK} Context: ~${approx_tokens} tokens ${DIM}(${file_count} files, ${search_success}/${search_count} searches)${NC}"
 
   echo "$bundle"
 }
