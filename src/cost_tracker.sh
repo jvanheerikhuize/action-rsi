@@ -106,7 +106,7 @@ cost_summary() {
     fcost="$(printf '%.4f' "$cost")"
     input_k="$(awk "BEGIN {printf \"%.1f\", $input / 1000}")"
     output_k="$(awk "BEGIN {printf \"%.1f\", $output / 1000}")"
-    echo -e "    ${SYM_DOT} ${BOLD}${name}${NC}  \$${fcost}  ${DIM}(${input_k}K in / ${output_k}K out)${NC}" >&2
+    echo -e "    ${DIM}·${NC} ${BOLD}${name}${NC}  \$${fcost}  ${DIM}(${input_k}K in / ${output_k}K out)${NC}" >&2
   done
 }
 
