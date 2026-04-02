@@ -7,7 +7,6 @@ github_username: jvanheerikhuize
 test_mode: true
 test_repos:
   - rsi
-  - dotfiles
 
 # Repos to skip (e.g., forks, archived, irrelevant)
 exclude_repos:
