@@ -1,0 +1,107 @@
+metadata:
+  id: FEAT-0001
+  title: 'shell_injection: Potential shell injection via variable expansion'
+  version: 1.0.0
+  status: draft
+  priority: high
+  author: RSI Audit Agent
+  created_at: "2026-04-02"
+  updated_at: "2026-04-02"
+  tags:
+    - rsi-audit
+    - static_analysis
+    - security
+description:
+  summary: 'Automated audit finding: shell_injection: Potential shell injection via variable expansion'
+  problem_statement: |-
+    - Found at src/context_builder.sh:68:   printf '%s\n' "${selected[@]}" | awk '!seen[$0]++' | head -"$CTX_MAX_FILES"
+    - Found at src/context_builder.sh:158:           url="$(printf '%b' "${url//%/\\x}" 2>/dev/null || echo "$url")"
+    - Found at src/llm_analyzer.sh:167:     log_error "Claude API returned HTTP ${http_code} for ${repo_name}: $(echo "${err_msg}" | mask_secrets)"
+    - Found at src/main.sh:126:     llm_findings="$(llm_analyze "$repo" "${context_bundles[$repo]}")" || {
+    - Found at src/main.sh:137:     static_as_findings="$(echo "${static_results[$repo]}" | jq '[.findings[] | {
+    - Found at src/main.sh:188:       pr_create "$repo_dir" "$repo" "${spec_files[@]}" || {
+    - Found at src/utils.sh:8: if [[ "${NO_COLOR:-}" == "1" ]] || [[ "${TERM:-}" == "dumb" ]]; then
+    - Found at src/cost_tracker.sh:12:   COST_FILE="$(mktemp /tmp/rsi-cost.XXXXXX)"
+    - Found at src/llm_analyzer.sh:108:   request_file="$(mktemp /tmp/rsi-llm-request.XXXXXX)"
+    - Found at src/llm_analyzer.sh:133:   response_file="$(mktemp /tmp/rsi-llm-response.XXXXXX)"
+    - Found at src/config.sh:60:   WORKSPACE="$(mktemp -d /tmp/rsi-workspace.XXXXXX)"
+    - In discovery.sh, repository names and metadata from GitHub API responses are used directly in shell operations without sanitization. A malicious repository name containing shell metacharacters could lead to command injection when passed to git clone, directory operations, or spec generation. The repo filtering logic also doesn't validate against dangerous patterns.
+  proposed_solution: |-
+    - Address the security_scan finding
+    - Address the security_scan finding
+    - Address the security_scan finding
+    - Address the security_scan finding
+    - Address the security_scan finding
+    - Address the security_scan finding
+    - Address the security_scan finding
+    - Address the security_scan finding
+    - Address the security_scan finding
+    - Address the security_scan finding
+    - Address the security_scan finding
+    - Implement strict input validation for all GitHub API responses. Sanitize repository names to allow only alphanumeric characters, hyphens, and underscores. Use parameter expansion or arrays instead of direct string interpolation for repository operations.
+  out_of_scope:
+    - Changes unrelated to the identified findings
+  dependencies: []
+technical_requirements:
+  constraints: []
+  security: []
+acceptance_criteria:
+  - id: AC-001
+    given: The src/context_builder.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the security_scan finding
+  - id: AC-002
+    given: The src/context_builder.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the security_scan finding
+  - id: AC-003
+    given: The src/llm_analyzer.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the security_scan finding
+  - id: AC-004
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the security_scan finding
+  - id: AC-005
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the security_scan finding
+  - id: AC-006
+    given: The src/main.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the security_scan finding
+  - id: AC-007
+    given: The src/utils.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the security_scan finding
+  - id: AC-008
+    given: The src/cost_tracker.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the security_scan finding
+  - id: AC-009
+    given: The src/llm_analyzer.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the security_scan finding
+  - id: AC-010
+    given: The src/llm_analyzer.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the security_scan finding
+  - id: AC-011
+    given: The src/config.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Address the security_scan finding
+  - id: AC-012
+    given: The src/discovery.sh file(s) exist in the repository
+    when: The changes from this spec are applied
+    then: Implement strict input validation for all GitHub API responses. Sanitize repository names to allow only alphanumeric characters, hyphens, and underscores. Use parameter expansion or arrays instead of direct string interpolation for repository operations.
+technical_notes: 'Files affected: src/config.sh, src/context_builder.sh, src/cost_tracker.sh, src/discovery.sh, src/llm_analyzer.sh, src/main.sh, src/utils.sh'
+testing_requirements:
+  unit_tests: true
+  integration_tests: false
+  e2e_tests: false
+  performance_tests: false
+  test_scenarios:
+    - Verify the fix addresses the identified issue
+rollout:
+  rollout_strategy: manual
+  rollback_plan: Revert the changes introduced by this spec via git revert.
