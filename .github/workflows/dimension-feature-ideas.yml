@@ -11,8 +11,8 @@ on:
         default: true
       budget_usd:
         description: 'Budget cap in USD'
-        type: number
-        default: 2
+        type: string
+        default: '2'
 
 permissions:
   contents: write
@@ -23,5 +23,5 @@ jobs:
     with:
       dimensions: feature_ideas
       test_mode: ${{ inputs.test_mode || true }}
-      budget_usd: ${{ inputs.budget_usd || 2 }}
+      budget_usd: ${{ inputs.budget_usd || '2' }}
     secrets: inherit

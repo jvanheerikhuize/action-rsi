@@ -13,8 +13,8 @@ on:
         default: true
       budget_usd:
         description: 'Budget cap in USD'
-        type: number
-        default: 10
+        type: string
+        default: '10'
   workflow_call:
     inputs:
       dimensions:
@@ -24,8 +24,8 @@ on:
         type: boolean
         default: true
       budget_usd:
-        type: number
-        default: 2
+        type: string
+        default: '2'
     secrets:
       ANTHROPIC_API_KEY:
         required: true
