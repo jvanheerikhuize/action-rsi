@@ -68,7 +68,7 @@ EOF
   }
 
   # Push branch
-  retry 3 2 git push -u origin "$branch" 2>/dev/null || {
+  retry 3 2 git push -u origin "$branch" || {
     log_error "Failed to push branch ${branch} to ${repo_name}"
     cd - > /dev/null
     return 1
