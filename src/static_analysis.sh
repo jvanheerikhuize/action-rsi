@@ -60,7 +60,7 @@ _sa_run_shellcheck() {
   fi
 
   local sc_output
-  sc_output="$(shellcheck -f json "${shell_files[@]}" 2>/dev/null)" || true
+  sc_output="$(shellcheck -x -f json "${shell_files[@]}" 2>/dev/null)" || true
 
   if [[ -z "$sc_output" || "$sc_output" == "[]" ]]; then
     echo "[]"

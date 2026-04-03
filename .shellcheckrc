@@ -1,0 +1,4 @@
+# Enable following sourced files
+external-sources=true
+# Resolve source directives relative to src/
+source-path=src
