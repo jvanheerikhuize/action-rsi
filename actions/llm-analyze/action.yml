@@ -44,6 +44,9 @@ inputs:
   audit-date:
     description: "Audit date (YYYY-MM-DD)."
     required: false
+  roles-path:
+    description: "Path to agent-roledefinitions submodule. Auto-detected if omitted."
+    required: false
 outputs:
   findings-path:
     description: "Path to merged Finding[] JSON."

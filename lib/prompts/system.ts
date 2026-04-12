@@ -1,13 +1,17 @@
 /**
  * System prompt builder.
  *
- * Composes dimension-specific prompts with the base preamble and output format.
+ * Loads dimension-specific prompts from the agent-roledefinitions submodule
+ * when available, falling back to the hardcoded preamble + dimension fragments
+ * for environments where the submodule isn't checked out.
+ *
  * The system prompt is designed to be identical across repos in a run so that
  * provider-level prompt caching applies.
  */
 
 import type { DimensionPass } from "../types.js";
 import { DIMENSION_PROMPTS } from "./dimensions.js";
+import { loadRole } from "../roles/loader.js";
 
 const PREAMBLE = `You are an expert code auditor performing a focused review of a software repository. You are part of the RSI (Recursive Self-Improvement) audit system — an automated pipeline that periodically reviews codebases and generates actionable improvement specs.
 
@@ -53,10 +57,23 @@ Your response must be ONLY valid JSON (no markdown fences, no explanation text b
   "summary": "2-3 sentence overview of findings and repo health"
 }`;
 
+let _rolesPath: string | undefined;
+
+export function setRolesPath(path: string): void {
+  _rolesPath = path;
+}
+
 /**
  * Build a system prompt for a specific dimension pass.
+ *
+ * Tries the role definitions submodule first. If the submodule isn't
+ * available, falls back to the hardcoded preamble + dimension fragments.
  */
 export function buildSystemPrompt(pass: DimensionPass): string {
+  if (_rolesPath) {
+    const role = loadRole(pass, _rolesPath);
+    if (role) return role.prompt;
+  }
   const dimension = DIMENSION_PROMPTS[pass];
   return [PREAMBLE, dimension.instructions, OUTPUT_FORMAT].join("\n\n");
 }

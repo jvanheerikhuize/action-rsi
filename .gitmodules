@@ -1,0 +1,3 @@
+[submodule "submodules/agent-roledefinitions"]
+	path = submodules/agent-roledefinitions
+	url = https://github.com/jvanheerikhuize/submodule-agent-roledefinitions

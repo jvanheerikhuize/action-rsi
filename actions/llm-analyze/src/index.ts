@@ -13,7 +13,8 @@ import * as core from "@actions/core";
 import { readFileSync, writeFileSync } from "node:fs";
 import { CostTracker } from "../../../lib/cost.js";
 import { DIMENSION_PROMPTS } from "../../../lib/prompts/dimensions.js";
-import { buildSystemPrompt, buildUserMessage } from "../../../lib/prompts/system.js";
+import { buildSystemPrompt, buildUserMessage, setRolesPath } from "../../../lib/prompts/system.js";
+import { resolveRolesPath, rolesAvailable, loadRole } from "../../../lib/roles/loader.js";
 import { applyContextUpdates, generateContextMd } from "../../../lib/context/persistent.js";
 import { createProvider, type LLMProviderConfig } from "../../../lib/llm/provider.js";
 import type {
@@ -55,6 +56,14 @@ async function run(): Promise<void> {
 
   if (provider !== "ollama" && !apiKey) {
     throw new Error(`api-key input is required for provider '${provider}'.`);
+  }
+
+  const rolesPath = resolveRolesPath(core.getInput("roles-path") || undefined);
+  if (rolesAvailable(rolesPath)) {
+    setRolesPath(rolesPath);
+    core.info(`Role definitions loaded from: ${rolesPath}`);
+  } else {
+    core.info("Role definitions submodule not found; using built-in prompts.");
   }
 
   const bundle: ContextBundle = JSON.parse(readFileSync(bundlePath, "utf-8"));
@@ -206,12 +215,15 @@ function parsePasses(input: string): DimensionPass[] {
 
 /**
  * Filter bundle.keyFiles to those most relevant to the pass, using the
- * dimension's contextEmphasis signals. Files not matched stay if we have
- * few files overall — quality-first, don't starve the LLM of context.
+ * dimension's contextEmphasis signals. Loads emphasis from role definitions
+ * submodule when available, falling back to built-in DIMENSION_PROMPTS.
  */
 function selectForPass(pass: DimensionPass, files: KeyFile[]): KeyFile[] {
   if (files.length <= 20) return files; // small repo: send everything
-  const emphasis = DIMENSION_PROMPTS[pass].contextEmphasis.map((e) => e.toLowerCase());
+  const rolesPath = resolveRolesPath(undefined);
+  const role = rolesAvailable(rolesPath) ? loadRole(pass, rolesPath) : null;
+  const emphasis = (role?.contextEmphasis ?? DIMENSION_PROMPTS[pass].contextEmphasis)
+    .map((e) => e.toLowerCase());
   const scored = files.map((f) => {
     const hay = `${f.path} ${f.reason}`.toLowerCase();
     const bonus = emphasis.reduce((sum, e) => sum + (hay.includes(e.split(" ")[0]) ? 15 : 0), 0);
