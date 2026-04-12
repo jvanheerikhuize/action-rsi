@@ -4,7 +4,14 @@
   "description": "RSI — Recursive Self-Improvement audit system",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "bundle:bootstrap": "ncc build actions/bootstrap/src/index.ts -o actions/bootstrap/dist -m",
+    "bundle:context-build": "ncc build actions/context-build/src/index.ts -o actions/context-build/dist -m",
+    "bundle:discover": "ncc build actions/discover/src/index.ts -o actions/discover/dist -m",
+    "bundle:llm-analyze": "ncc build actions/llm-analyze/src/index.ts -o actions/llm-analyze/dist -m",
+    "bundle:publish-results": "ncc build actions/publish-results/src/index.ts -o actions/publish-results/dist -m",
+    "bundle:static-analysis": "ncc build actions/static-analysis/src/index.ts -o actions/static-analysis/dist -m",
+    "bundle": "npm run bundle:bootstrap && npm run bundle:context-build && npm run bundle:discover && npm run bundle:llm-analyze && npm run bundle:publish-results && npm run bundle:static-analysis",
+    "build": "npm run bundle",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit"
