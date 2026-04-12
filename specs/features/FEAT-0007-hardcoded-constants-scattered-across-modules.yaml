@@ -1,0 +1,40 @@
+metadata:
+  id: FEAT-0007
+  title: 'Hardcoded constants scattered across modules'
+  version: 1.0.0
+  status: draft
+  priority: low
+  author: 'RSI Audit Agent'
+  created_at: "2026-04-12"
+  updated_at: "2026-04-12"
+  tags:
+    - rsi-audit
+    - non_functional
+    - maintainability
+description:
+  summary: 'Automated audit finding: Hardcoded constants scattered across modules'
+  problem_statement: |
+    Magic numbers and strings are scattered throughout the codebase: MAX_FILE_BYTES = 32_000, retryDelayMs = 10_000, maxRetries = 5, etc. These constants are duplicated across different provider implementations and action modules, making configuration changes difficult.
+  proposed_solution: 'Extract constants to a shared configuration module. Create a constants.ts file with well-documented defaults and allow environment variable overrides where appropriate.'
+  out_of_scope:
+    - Changes unrelated to the identified findings
+  dependencies: []
+technical_requirements:
+  constraints: []
+  security: []
+acceptance_criteria:
+  - id: AC-001
+    given: 'The file actions/context-build/src/index.ts exists in the repository'
+    when: The changes from this spec are applied
+    then: 'Extract constants to a shared configuration module. Create a constants.ts file with well-documented defaults and allow environment variable overrides where appropriate.'
+technical_notes: 'Files affected: actions/context-build/src/index.ts'
+testing_requirements:
+  unit_tests: true
+  integration_tests: false
+  e2e_tests: false
+  performance_tests: false
+  test_scenarios:
+    - Verify the fix addresses the identified issue
+rollout:
+  rollout_strategy: manual
+  rollback_plan: Revert the changes introduced by this spec via git revert.
