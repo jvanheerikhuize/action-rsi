@@ -347,7 +347,7 @@ function normalizeImport(imp: string, fromFile: string, ext: string): string | n
         else if (p !== ".") parts.push(p);
       }
       let resolved = parts.join("/");
-      if (resolved && !resolved.includes(".")) resolved += ext;
+      if (resolved && !/\.[a-z]+$/i.test(resolved)) resolved += ext;
       return resolved || null;
     }
     return null;

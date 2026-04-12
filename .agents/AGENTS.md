@@ -13,22 +13,29 @@ Read `.agents/CONTEXT.md` for:
 
 Match the existing style. When in doubt, look at surrounding code.
 
-## After completing a spec file
+## Submodules
 
-Spec files live in `specs/features/` (A-SDLC format). When you implement a spec:
+This repo uses a git submodule at `submodules/agent-roledefinitions` for audit role definitions. If it's not initialized:
 
-1. **Implement the spec** as described in `specs/features/FEAT-NNNN.yaml`
-2. **Update `.agents/CONTEXT.md`** if your changes affected:
+```bash
+git submodule update --init
+```
+
+Role definitions (S.E.N.T.R.Y., P.R.O.B.E., G.U.I.D.E., S.P.A.R.K., R.S.I.) live in that submodule. The system falls back to built-in prompts in `lib/prompts/dimensions.ts` when the submodule is absent.
+
+## After making changes
+
+1. **Update `.agents/CONTEXT.md`** if your changes affected:
    - Architecture pattern or description
    - Entry points (added/removed/renamed)
    - Key modules (added/removed, purpose changed, new dependencies)
    - Coding conventions (e.g., new error handling pattern)
    - Dependency graph (new imports, removed imports)
-3. **Update Known Concerns**:
+2. **Update Known Concerns**:
    - Remove concerns that your implementation resolved
    - Add new concerns for trade-offs you made or TODOs you left
-4. **Delete the completed spec file** from `specs/features/`
-5. **Update `Last updated`** in the CONTEXT.md header with today's date and your name/agent
+3. **Update `Last updated`** in the CONTEXT.md header with today's date and your name/agent
+4. **Rebuild bundles** if you changed any TypeScript: `npm run bundle`
 
 ## Format of CONTEXT.md
 
@@ -37,17 +44,9 @@ The file is structured markdown. Sections:
 - **Architecture**: Description, then `### Entry Points` and `### Key Modules` (table)
 - **Conventions**: `- key: value` bullet list
 - **Dependency Graph**: code block with `file → dep1, dep2` lines
-- **Known Concerns**: `- [YYYY-MM-DD] [severity] description`
+- **Known Concerns**: `- [YYYY-MM-DD] description`
 
 Keep sections in this order. Machine tools (RSI audit) parse this format.
-
-## Spec file format
-
-Specs follow the A-SDLC governance framework. See any existing spec in `specs/features/` for the exact format. Every spec has:
-- `metadata`: id, title, severity, dimension
-- `problem_statement`: what needs solving and why
-- `proposed_solution`: the approach
-- `acceptance_criteria`: testable conditions for completion
 
 ## Questions or issues?
 

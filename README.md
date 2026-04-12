@@ -27,6 +27,19 @@ discover  →  ┬─ static-analysis ─ context-build ─ bootstrap? ─ llm-a
 
 Supported providers (via `lib/llm/`): Anthropic, OpenAI, Google, Ollama.
 
+### Role definitions submodule
+
+Audit prompts are loaded dynamically from the [`agent-roledefinitions`](https://github.com/jvanheerikhuize/submodule-agent-roledefinitions) git submodule at `submodules/agent-roledefinitions`. Each LLM dimension pass maps to a specialised role:
+
+| Pass | Role | Reasoning mode |
+|---|---|---|
+| security | S.E.N.T.R.Y. | adversarial |
+| quality | P.R.O.B.E. | analytical |
+| documentation | G.U.I.D.E. | empathetic |
+| innovation | S.P.A.R.K. | creative |
+
+If the submodule is not present, the system falls back to built-in prompts in `lib/prompts/dimensions.ts`.
+
 ## Persistent context + delta
 
 On the first audit, RSI writes `.agents/CONTEXT.md` (tech stack, entry points, modules, conventions, dependency graph, known concerns) and `.agents/AGENTS.md` (instructions for local agents). On subsequent audits it reads the existing context, computes a git-log-based delta, and focuses the LLM on what changed — shrinking context over time while keeping a durable shared understanding between RSI and local agents.
@@ -69,9 +82,17 @@ Dispatch inputs (all optional, sensible defaults):
 ## Development
 
 ```bash
+git clone --recurse-submodules https://github.com/jvanheerikhuize/action-rsi.git
+cd action-rsi
 npm install
 npm run lint     # tsc --noEmit
 npm run bundle   # ncc-bundle each action into actions/*/dist/
+```
+
+If you already cloned without `--recurse-submodules`:
+
+```bash
+git submodule update --init
 ```
 
 `dist/` bundles are committed so the actions run without a runtime install step.
