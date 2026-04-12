@@ -1,0 +1,35 @@
+name: "RSI Bootstrap"
+description: "Generate initial .agents/CONTEXT.md and .agents/AGENTS.md for a repository and open a PR."
+inputs:
+  repo-path:
+    description: "Path to the checked-out target repository."
+    required: true
+  repo-name:
+    description: "owner/name of the target repository (for PR creation)."
+    required: true
+  github-token:
+    description: "GitHub token with write access to the target repository."
+    required: true
+  audit-date:
+    description: "Date of the audit (YYYY-MM-DD). Defaults to today."
+    required: false
+  updated-by:
+    description: "Identity to record as updater in CONTEXT.md."
+    required: false
+    default: "RSI audit (bootstrap)"
+  base-branch:
+    description: "Base branch for the PR."
+    required: false
+    default: "main"
+outputs:
+  pr-url:
+    description: "URL of the opened bootstrap PR."
+  context-md-path:
+    description: "Path to the generated CONTEXT.md (relative to repo)."
+  agents-md-path:
+    description: "Path to the generated AGENTS.md (relative to repo)."
+  created:
+    description: "'true' if a PR was created, 'false' if the files already existed."
+runs:
+  using: "node20"
+  main: "dist/index.js"

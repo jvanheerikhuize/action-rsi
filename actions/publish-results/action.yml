@@ -1,0 +1,56 @@
+name: "RSI Publish Results"
+description: "Generate A-SDLC specs / SARIF / annotations from findings and open an audit PR in the target repo."
+inputs:
+  repo-path:
+    description: "Path to the checked-out target repository."
+    required: true
+  repo-name:
+    description: "owner/name of the target repository."
+    required: true
+  github-token:
+    description: "Token with write access to the target repository."
+    required: true
+  findings-path:
+    description: "Path to JSON array of Finding objects (from llm-analyze)."
+    required: true
+  static-findings-path:
+    description: "Optional path to static-analysis Finding[] to also include in SARIF."
+    required: false
+  updated-context-path:
+    description: "Path to regenerated CONTEXT.md to include in the PR."
+    required: false
+  audit-date:
+    description: "Audit date (YYYY-MM-DD)."
+    required: false
+  output-formats:
+    description: "Comma-separated: spec,sarif,annotations,json."
+    required: false
+    default: "spec"
+  max-specs:
+    description: "Cap on number of specs to generate (0 = no cap)."
+    required: false
+    default: "0"
+  base-branch:
+    description: "Base branch for the audit PR."
+    required: false
+    default: "main"
+  specs-dir:
+    description: "Directory (relative to repo) where spec files are written."
+    required: false
+    default: "specs/features"
+  sarif-path:
+    description: "Where to write the SARIF file (relative to repo-path or absolute)."
+    required: false
+    default: "rsi-findings.sarif"
+outputs:
+  pr-url:
+    description: "URL of the opened audit PR (if specs were created)."
+  specs-created:
+    description: "Number of spec files written."
+  sarif-path:
+    description: "Absolute path to the SARIF file (if format=sarif)."
+  annotations-count:
+    description: "Number of inline annotations emitted."
+runs:
+  using: "node20"
+  main: "dist/index.js"

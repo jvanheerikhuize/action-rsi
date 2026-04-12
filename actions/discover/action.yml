@@ -1,0 +1,41 @@
+name: "RSI Discover"
+description: "List a user's repositories and emit a filtered matrix for downstream parallel audits."
+inputs:
+  github-token:
+    description: "GitHub token with read access to the user's repositories."
+    required: true
+  username:
+    description: "GitHub username (or org) whose repos to discover."
+    required: true
+  test-mode:
+    description: "If 'true', restrict output to test-repos only."
+    required: false
+    default: "false"
+  test-repos:
+    description: "Comma-separated list of repo names to include in test mode."
+    required: false
+    default: ""
+  exclude-repos:
+    description: "Comma-separated list of repo names to exclude."
+    required: false
+    default: ""
+  include-forks:
+    description: "Include forked repositories."
+    required: false
+    default: "false"
+  include-archived:
+    description: "Include archived repositories."
+    required: false
+    default: "false"
+outputs:
+  matrix:
+    description: "JSON matrix object for use with strategy.matrix (e.g. {\"repo\": [\"owner/a\", \"owner/b\"]})."
+  repos-json:
+    description: "JSON array of full RepoSummary objects."
+  total:
+    description: "Total number of repos before filtering."
+  filtered:
+    description: "Number of repos after filtering."
+runs:
+  using: "node20"
+  main: "dist/index.js"

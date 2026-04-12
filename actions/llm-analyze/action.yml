@@ -1,0 +1,62 @@
+name: "RSI LLM Analyze"
+description: "Run multi-pass LLM analysis over a context bundle with dimension-specific reasoning modes."
+inputs:
+  context-bundle:
+    description: "Path to context-bundle.json (from context-build action)."
+    required: true
+  repo-path:
+    description: "Path to the checked-out target repository (used to re-read updated CONTEXT.md)."
+    required: true
+  provider:
+    description: "LLM provider: anthropic | openai | google | ollama."
+    required: false
+    default: "anthropic"
+  model:
+    description: "Model identifier for the selected provider."
+    required: false
+    default: "claude-sonnet-4-20250514"
+  api-key:
+    description: "API key for the LLM provider (not required for ollama)."
+    required: false
+  base-url:
+    description: "Override base URL (for ollama or custom endpoints)."
+    required: false
+  passes:
+    description: "Comma-separated list of passes to run: security,quality,documentation,innovation. Default: all."
+    required: false
+    default: "security,quality,documentation,innovation"
+  max-output-tokens:
+    description: "Max output tokens per pass."
+    required: false
+    default: "8192"
+  findings-path:
+    description: "Where to write merged findings JSON."
+    required: false
+    default: "llm-findings.json"
+  audit-result-path:
+    description: "Where to write the full AuditResult JSON (per-pass breakdown + cost)."
+    required: false
+    default: "audit-result.json"
+  updated-context-path:
+    description: "Where to write the CONTEXT.md updated with LLM-detected context changes."
+    required: false
+    default: "updated-context.md"
+  audit-date:
+    description: "Audit date (YYYY-MM-DD)."
+    required: false
+outputs:
+  findings-path:
+    description: "Path to merged Finding[] JSON."
+  audit-result-path:
+    description: "Path to AuditResult JSON with per-pass breakdown."
+  updated-context-path:
+    description: "Path to regenerated CONTEXT.md incorporating LLM updates."
+  total-findings:
+    description: "Total count of LLM findings across passes."
+  total-cost-usd:
+    description: "Total cost in USD across all passes."
+  summary:
+    description: "Aggregated 2-3 sentence summary of the audit."
+runs:
+  using: "node20"
+  main: "dist/index.js"

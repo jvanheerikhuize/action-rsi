@@ -37,3 +37,7 @@ htmlcov/
 
 # Temporary workspace (cloned repos during audit)
 workspace/
+
+# Node / TypeScript (v2)
+node_modules/
+*.tsbuildinfo

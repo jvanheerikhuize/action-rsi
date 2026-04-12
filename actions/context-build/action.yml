@@ -1,0 +1,47 @@
+name: "RSI Context Build"
+description: "Read persistent .agents/CONTEXT.md, compute delta since last audit, assemble context bundle for LLM analysis."
+inputs:
+  repo-path:
+    description: "Path to the checked-out target repository."
+    required: true
+  repo-name:
+    description: "owner/name of the target repository."
+    required: true
+  static-findings:
+    description: "Path to JSON file containing static analysis findings (array of Finding)."
+    required: false
+  audit-date:
+    description: "Date of this audit (YYYY-MM-DD). Defaults to today."
+    required: false
+  force-full:
+    description: "If 'true', treat this as a fresh full audit even if CONTEXT.md exists."
+    required: false
+    default: "false"
+  max-key-files:
+    description: "Soft cap on key files to include. 0 = no cap (bootstrap/large-context mode)."
+    required: false
+    default: "0"
+  output-path:
+    description: "Where to write the context bundle JSON."
+    required: false
+    default: "context-bundle.json"
+  updated-context-path:
+    description: "Where to write the regenerated CONTEXT.md (for subsequent publish step)."
+    required: false
+    default: "updated-context.md"
+outputs:
+  bundle-path:
+    description: "Path to the written context bundle JSON."
+  updated-context-path:
+    description: "Path to the regenerated CONTEXT.md (may be identical to input)."
+  is-bootstrap:
+    description: "'true' if no .agents/CONTEXT.md was found (caller should run bootstrap)."
+  needs-full-reaudit:
+    description: "'true' if the persistent context is older than 30 days."
+  token-estimate:
+    description: "Approximate token count of the bundle (characters/4 heuristic)."
+  has-changes:
+    description: "'true' if there are commits since the last CONTEXT.md update."
+runs:
+  using: "node20"
+  main: "dist/index.js"

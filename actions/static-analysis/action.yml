@@ -1,0 +1,32 @@
+name: "RSI Static Analysis"
+description: "Language-aware static analysis: shellcheck, ruff, eslint, gitleaks, trivy, plus declarative security patterns."
+inputs:
+  repo-path:
+    description: "Path to the checked-out target repository."
+    required: true
+  output-path:
+    description: "Where to write the findings JSON."
+    required: false
+    default: "static-findings.json"
+  metrics-path:
+    description: "Where to write repo metrics JSON."
+    required: false
+    default: "static-metrics.json"
+outputs:
+  findings-path:
+    description: "Path to the JSON array of Finding objects."
+  metrics-path:
+    description: "Path to the repo metrics JSON."
+  total:
+    description: "Total count of findings."
+  high:
+    description: "Count of high-severity findings."
+  medium:
+    description: "Count of medium-severity findings."
+  low:
+    description: "Count of low-severity findings."
+  languages:
+    description: "Comma-separated list of detected primary languages."
+runs:
+  using: "node20"
+  main: "dist/index.js"

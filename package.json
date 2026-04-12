@@ -1,0 +1,26 @@
+{
+  "name": "action-rsi",
+  "version": "2.0.0",
+  "description": "RSI — Recursive Self-Improvement audit system",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/exec": "^1.1.1",
+    "@actions/github": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0",
+    "@vercel/ncc": "^0.38.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
