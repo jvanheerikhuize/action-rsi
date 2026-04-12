@@ -1,0 +1,41 @@
+metadata:
+  id: FEAT-0004
+  title: 'Race condition in parallel LLM pass execution'
+  version: 1.0.0
+  status: draft
+  priority: medium
+  author: 'RSI Audit Agent'
+  created_at: "2026-04-12"
+  updated_at: "2026-04-12"
+  tags:
+    - rsi-audit
+    - functional
+    - bug
+description:
+  summary: 'Automated audit finding: Race condition in parallel LLM pass execution'
+  problem_statement: |
+    In actions/llm-analyze/src/index.ts:85-87, multiple LLM passes run in parallel using Promise.all(), but they all attempt to update the same persistent context object. While the current implementation uses structuredClone() in applyContextUpdates(), the merging of context updates from parallel passes (lines 89-97) could lead to lost updates if passes modify overlapping concerns or architecture changes simultaneously.
+  proposed_solution: |
+    Implement proper synchronization for context updates, or serialize the context update phase after all passes complete. Consider using a merge strategy that can handle conflicting updates from different passes.
+  out_of_scope:
+    - Changes unrelated to the identified findings
+  dependencies: []
+technical_requirements:
+  constraints: []
+  security: []
+acceptance_criteria:
+  - id: AC-001
+    given: 'The file actions/llm-analyze/src/index.ts exists in the repository'
+    when: The changes from this spec are applied
+    then: 'Implement proper synchronization for context updates, or serialize the context update phase after all passes complete. Consider using a merge strategy that can handle conflicting updates from different passes.'
+technical_notes: 'Files affected: actions/llm-analyze/src/index.ts'
+testing_requirements:
+  unit_tests: true
+  integration_tests: false
+  e2e_tests: false
+  performance_tests: false
+  test_scenarios:
+    - Verify the fix addresses the identified issue
+rollout:
+  rollout_strategy: manual
+  rollback_plan: Revert the changes introduced by this spec via git revert.

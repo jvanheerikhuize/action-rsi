@@ -1,0 +1,40 @@
+metadata:
+  id: FEAT-0015
+  title: 'Hardcoded magic numbers without constants'
+  version: 1.0.0
+  status: draft
+  priority: low
+  author: 'RSI Audit Agent'
+  created_at: "2026-04-12"
+  updated_at: "2026-04-12"
+  tags:
+    - rsi-audit
+    - functional
+    - quality
+description:
+  summary: 'Automated audit finding: Hardcoded magic numbers without constants'
+  problem_statement: |
+    Several magic numbers appear throughout the codebase without named constants: MAX_FILE_BYTES = 32_000 (actions/context-build/src/index.ts:16), maxBuffer: 32 * 1024 * 1024 (multiple files), timeout: 5000 (lib/context/persistent.ts). These values are repeated and lack context for why these specific limits were chosen.
+  proposed_solution: 'Extract magic numbers into named constants with documentation explaining the rationale. Create a shared constants file for values used across multiple modules.'
+  out_of_scope:
+    - Changes unrelated to the identified findings
+  dependencies: []
+technical_requirements:
+  constraints: []
+  security: []
+acceptance_criteria:
+  - id: AC-001
+    given: 'The file actions/context-build/src/index.ts exists in the repository'
+    when: The changes from this spec are applied
+    then: 'Extract magic numbers into named constants with documentation explaining the rationale. Create a shared constants file for values used across multiple modules.'
+technical_notes: 'Files affected: actions/context-build/src/index.ts'
+testing_requirements:
+  unit_tests: true
+  integration_tests: false
+  e2e_tests: false
+  performance_tests: false
+  test_scenarios:
+    - Verify the fix addresses the identified issue
+rollout:
+  rollout_strategy: manual
+  rollback_plan: Revert the changes introduced by this spec via git revert.
