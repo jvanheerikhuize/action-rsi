@@ -62,18 +62,6 @@ export function buildSystemPrompt(pass: DimensionPass): string {
 }
 
 /**
- * Build a system prompt for all dimensions in a single pass.
- * Used for bootstrap (first audit) where we need a comprehensive view.
- */
-export function buildFullSystemPrompt(): string {
-  const allDimensions = Object.values(DIMENSION_PROMPTS)
-    .map((d) => d.instructions)
-    .join("\n\n");
-
-  return [PREAMBLE, allDimensions, OUTPUT_FORMAT].join("\n\n");
-}
-
-/**
  * Build the user message from a context bundle.
  * This is dimension-agnostic — the context-build action selects
  * dimension-relevant files before this point.

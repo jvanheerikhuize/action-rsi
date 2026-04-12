@@ -1,8 +1,8 @@
 /**
- * Language detection and analyzer registry.
+ * Language detection.
  *
- * Detects languages in a repository by file extension distribution
- * and maps them to appropriate static analysis tools.
+ * Detects languages in a repository by file extension distribution.
+ * The static analyzer mapping lives in lib/analyzers/runners.ts.
  */
 
 import type { LanguageProfile } from "./types.js";
@@ -46,27 +46,6 @@ const ENTRY_POINT_PATTERNS: Record<string, string[]> = {
   java: ["Main.java", "Application.java"],
 };
 
-export interface AnalyzerConfig {
-  tool: string;
-  args: string[];
-  outputFormat: "json" | "text";
-}
-
-const ANALYZER_REGISTRY: Record<string, AnalyzerConfig[]> = {
-  shell: [{ tool: "shellcheck", args: ["-x", "-f", "json"], outputFormat: "json" }],
-  python: [{ tool: "ruff", args: ["check", "--output-format=json"], outputFormat: "json" }],
-  javascript: [{ tool: "eslint", args: ["--format=json"], outputFormat: "json" }],
-  typescript: [{ tool: "eslint", args: ["--format=json"], outputFormat: "json" }],
-  go: [{ tool: "staticcheck", args: ["-f", "json"], outputFormat: "json" }],
-  rust: [{ tool: "clippy", args: ["--message-format=json"], outputFormat: "json" }],
-};
-
-// Universal analyzers run regardless of language
-export const UNIVERSAL_ANALYZERS: AnalyzerConfig[] = [
-  { tool: "gitleaks", args: ["detect", "--no-git", "-f", "json", "--exit-code", "0"], outputFormat: "json" },
-  { tool: "trivy", args: ["fs", "--scanners", "vuln", "--format", "json", "--quiet"], outputFormat: "json" },
-];
-
 /**
  * Detect languages in a repository from a list of file paths.
  */
@@ -95,28 +74,6 @@ export function detectLanguages(filePaths: string[]): LanguageProfile[] {
       entryPoints: findEntryPoints(language, data.paths),
     }))
     .sort((a, b) => b.percentage - a.percentage);
-}
-
-/**
- * Get the analyzers appropriate for detected languages.
- */
-export function getAnalyzers(languages: LanguageProfile[]): AnalyzerConfig[] {
-  const analyzers: AnalyzerConfig[] = [...UNIVERSAL_ANALYZERS];
-  const seen = new Set<string>();
-
-  for (const lang of languages) {
-    const langAnalyzers = ANALYZER_REGISTRY[lang.language];
-    if (langAnalyzers) {
-      for (const analyzer of langAnalyzers) {
-        if (!seen.has(analyzer.tool)) {
-          seen.add(analyzer.tool);
-          analyzers.push(analyzer);
-        }
-      }
-    }
-  }
-
-  return analyzers;
 }
 
 function findEntryPoints(language: string, filePaths: string[]): string[] {
