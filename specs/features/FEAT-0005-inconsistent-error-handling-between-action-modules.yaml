@@ -1,0 +1,40 @@
+metadata:
+  id: FEAT-0005
+  title: 'Inconsistent error handling between action modules'
+  version: 1.0.0
+  status: draft
+  priority: medium
+  author: 'RSI Audit Agent'
+  created_at: "2026-04-12"
+  updated_at: "2026-04-12"
+  tags:
+    - rsi-audit
+    - functional
+    - quality
+description:
+  summary: 'Automated audit finding: Inconsistent error handling between action modules'
+  problem_statement: |
+    Each action module (bootstrap, context-build, discover, etc.) handles errors differently. Some use try-catch with core.setFailed, others rely on promise rejection, and some have inconsistent logging levels. This makes debugging pipeline failures difficult and could lead to silent failures or unclear error messages.
+  proposed_solution: 'Standardize error handling across all action modules. Create a common error handling utility that provides consistent logging, error formatting, and failure reporting to GitHub Actions.'
+  out_of_scope:
+    - Changes unrelated to the identified findings
+  dependencies: []
+technical_requirements:
+  constraints: []
+  security: []
+acceptance_criteria:
+  - id: AC-001
+    given: 'The file actions/bootstrap/src/index.ts exists in the repository'
+    when: The changes from this spec are applied
+    then: 'Standardize error handling across all action modules. Create a common error handling utility that provides consistent logging, error formatting, and failure reporting to GitHub Actions.'
+technical_notes: 'Files affected: actions/bootstrap/src/index.ts'
+testing_requirements:
+  unit_tests: true
+  integration_tests: false
+  e2e_tests: false
+  performance_tests: false
+  test_scenarios:
+    - Verify the fix addresses the identified issue
+rollout:
+  rollout_strategy: manual
+  rollback_plan: Revert the changes introduced by this spec via git revert.
