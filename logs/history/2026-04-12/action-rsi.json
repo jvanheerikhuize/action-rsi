@@ -3,6 +3,101 @@
   "date": "2026-04-12",
   "passes": [
     {
+      "pass": "security",
+      "findings": [
+        {
+          "id": "llm-security-0",
+          "source": "llm",
+          "dimension": "non_functional",
+          "severity": "high",
+          "category": "security",
+          "title": "Hardcoded GitHub token in remote URL construction",
+          "description": "In actions/bootstrap/src/index.ts:142 and actions/publish-results/src/index.ts:179, GitHub tokens are directly embedded in git remote URLs using string interpolation: `https://x-access-token:${token}@github.com/${owner}/${repo}.git`. This exposes the token in process arguments, shell history, and potentially in logs or error messages. If the git command fails, the token could be leaked in error output.",
+          "file": "actions/bootstrap/src/index.ts",
+          "recommendation": "Use git credential helpers or configure the remote separately from the push command. Consider using `git config credential.helper` or the `GIT_ASKPASS` environment variable to provide credentials securely without embedding them in URLs.",
+          "references": [
+            {
+              "url": "https://git-scm.com/docs/gitcredentials",
+              "title": "Git Credentials Documentation"
+            }
+          ]
+        },
+        {
+          "id": "llm-security-1",
+          "source": "llm",
+          "dimension": "functional",
+          "severity": "medium",
+          "category": "bug",
+          "title": "Race condition in parallel LLM pass execution",
+          "description": "In actions/llm-analyze/src/index.ts:85-87, multiple LLM passes run in parallel using Promise.all(), but they all attempt to update the same persistent context object. While the current implementation uses structuredClone() in applyContextUpdates(), the merging of context updates from parallel passes (lines 89-97) could lead to lost updates if passes modify overlapping concerns or architecture changes simultaneously.",
+          "file": "actions/llm-analyze/src/index.ts",
+          "recommendation": "Implement proper synchronization for context updates, or serialize the context update phase after all passes complete. Consider using a merge strategy that can handle conflicting updates from different passes.",
+          "references": []
+        },
+        {
+          "id": "llm-security-2",
+          "source": "llm",
+          "dimension": "non_functional",
+          "severity": "medium",
+          "category": "security",
+          "title": "Unsafe shell command construction with user input",
+          "description": "Multiple locations construct shell commands using string interpolation with user-controlled input without proper escaping. For example, in actions/bootstrap/src/index.ts:141 and actions/context-build/src/index.ts:169, repo paths and branch names are directly interpolated into git commands. A malicious repo name or branch name containing shell metacharacters could lead to command injection.",
+          "file": "actions/bootstrap/src/index.ts",
+          "recommendation": "Use execFileSync() with argument arrays instead of execSync() with interpolated strings, or implement proper shell escaping for all user-controlled input. For git operations, consider using a git library like simple-git instead of shell commands.",
+          "references": [
+            {
+              "url": "https://nodejs.org/api/child_process.html#child_processexecfilesyncfile-args-options",
+              "title": "Node.js execFileSync Documentation"
+            }
+          ]
+        },
+        {
+          "id": "llm-security-3",
+          "source": "llm",
+          "dimension": "functional",
+          "severity": "medium",
+          "category": "bug",
+          "title": "Missing error handling for file operations in critical paths",
+          "description": "Several file operations lack proper error handling that could cause silent failures or crashes. For example, in actions/context-build/src/index.ts:234-242, the readFileCapped() function catches all errors and returns null, but callers don't always check for null returns. In lib/context/persistent.ts, file parsing operations could fail silently, leading to incomplete context data.",
+          "file": "actions/context-build/src/index.ts",
+          "recommendation": "Add explicit error handling for critical file operations. Distinguish between expected failures (file not found) and unexpected failures (permission denied, disk full). Log warnings for unexpected failures and ensure callers handle null/undefined returns appropriately.",
+          "references": []
+        },
+        {
+          "id": "llm-security-4",
+          "source": "llm",
+          "dimension": "functional",
+          "severity": "low",
+          "category": "maintainability",
+          "title": "Inconsistent import path resolution logic",
+          "description": "The import graph computation in lib/context/builder.ts:280-320 uses different normalization logic for different file types, but the path resolution for relative imports (lines 295-310) doesn't handle edge cases like imports that go above the repository root or circular relative references. The normalizeImport function also has inconsistent behavior between shell and other languages.",
+          "file": "lib/context/builder.ts",
+          "recommendation": "Standardize the import resolution logic across all file types. Add bounds checking to prevent path traversal above the repository root. Consider using a proper path resolution library or implementing comprehensive test cases for edge cases.",
+          "references": []
+        },
+        {
+          "id": "llm-security-5",
+          "source": "llm",
+          "dimension": "non_functional",
+          "severity": "low",
+          "category": "performance",
+          "title": "Inefficient file content loading for large repositories",
+          "description": "The key file selection process in actions/context-build/src/index.ts loads full file contents for scoring and then again for the final KeyFile objects. For large repositories, this could result in reading the same files multiple times and keeping large amounts of content in memory simultaneously. The MAX_FILE_BYTES limit helps but doesn't prevent the double-read issue.",
+          "file": "actions/context-build/src/index.ts",
+          "recommendation": "Implement a file content cache or lazy loading strategy. Consider streaming file content or using file metadata for initial scoring before loading full content only for selected files.",
+          "references": []
+        }
+      ],
+      "usage": {
+        "inputTokens": 47256,
+        "outputTokens": 1674,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 1042
+      },
+      "costUsd": 0.1707855,
+      "duration": 36.365
+    },
+    {
       "pass": "quality",
       "findings": [
         {
@@ -11,22 +106,22 @@
           "dimension": "functional",
           "severity": "high",
           "category": "bug",
-          "title": "Massive context drift indicates broken dependency resolution",
-          "description": "The persistent context documents 50+ modules and dependencies that don't exist in the actual codebase. All lib/ modules are documented as .js files but exist as .ts files. The dependency graph references non-existent paths like 'actions/context', 'actions/llm', 'actions/publish', 'actions/static' when the actual paths are 'actions/context-build', 'actions/llm-analyze', etc. This suggests the context builder is fundamentally broken or using stale data, which would cause the LLM analysis to operate on completely wrong information.",
+          "title": "Massive context drift indicates stale dependency graph in CONTEXT.md",
+          "description": "The context drift shows 60+ stale dependencies where the dependency graph references .js files that don't exist, but the actual files are .ts. This indicates the dependency graph was generated incorrectly or the context is severely outdated. For example, `actions/bootstrap/src/index.ts` depends on `lib/context/builder.js` which does not exist - it should be `lib/context/builder.ts`. This will cause runtime import failures.",
           "file": ".agents/CONTEXT.md",
-          "recommendation": "Immediately fix the context builder to scan actual file paths and extensions. The buildPersistentContext function in lib/context/builder.ts needs to correctly resolve TypeScript imports and use actual directory names. This is critical for the entire RSI system to function.",
+          "recommendation": "Regenerate the dependency graph using the correct file extensions. The `computeImportGraph` function in `lib/context/builder.ts` should normalize imports to use .ts extensions, not .js extensions when building the graph.",
           "references": []
         },
         {
           "id": "llm-quality-1",
           "source": "llm",
           "dimension": "functional",
-          "severity": "high",
+          "severity": "medium",
           "category": "bug",
-          "title": "Import resolution will fail due to .js extension assumptions",
-          "description": "Throughout the TypeScript source files (actions/*/src/index.ts), imports use .js extensions for lib/ modules (e.g., '../../../lib/context/builder.js') but the actual files are .ts. While TypeScript compilation might handle this, the context builder and dependency graph logic appears to expect .js files, creating a mismatch between documented and actual module structure.",
+          "title": "Import path inconsistency between ES modules and file extensions",
+          "description": "Throughout the codebase, TypeScript files import from paths ending in .js (e.g., `from '../../../lib/context/builder.js'` in actions/bootstrap/src/index.ts:11) but the actual files are .ts. While this works with TypeScript's module resolution, it creates confusion and the dependency graph builder may not handle this correctly.",
           "file": "actions/bootstrap/src/index.ts",
-          "recommendation": "Standardize import paths to use .ts extensions in source and ensure the build process correctly maps these. Update the context builder to understand TypeScript module resolution rules.",
+          "recommendation": "Either consistently use .js extensions in imports (current approach) or update the dependency graph builder to handle TypeScript's ES module resolution correctly. Document this convention in CONTEXT.md.",
           "references": []
         },
         {
@@ -34,11 +129,11 @@
           "source": "llm",
           "dimension": "functional",
           "severity": "medium",
-          "category": "bug",
-          "title": "Race condition in parallel LLM provider loading",
-          "description": "In actions/llm-analyze/src/index.ts, the code uses dynamic imports for LLM providers with Promise.all for parallel passes, but the provider creation happens synchronously after the import. If multiple passes try to create the same provider type simultaneously, there could be initialization conflicts, especially with shared resources like HTTP clients or rate limiters.",
-          "file": "actions/llm-analyze/src/index.ts",
-          "recommendation": "Add provider instance caching or ensure provider creation is idempotent. Consider using a provider factory with singleton pattern to avoid duplicate initialization.",
+          "category": "quality",
+          "title": "Error handling inconsistency across action modules",
+          "description": "Each action handles errors differently. Some use try-catch with core.setFailed (actions/bootstrap/src/index.ts:165), others rely on unhandled promise rejection (actions/discover/src/index.ts:75). The static-analysis action uses a runSafely wrapper (actions/static-analysis/src/index.ts:35) while others don't. This makes debugging and monitoring inconsistent.",
+          "file": "actions/bootstrap/src/index.ts",
+          "recommendation": "Standardize error handling across all actions. Create a common error handling utility that logs context, sets appropriate exit codes, and provides consistent error messages. Update all action entry points to use this pattern.",
           "references": []
         },
         {
@@ -47,83 +142,238 @@
           "dimension": "functional",
           "severity": "medium",
           "category": "bug",
-          "title": "Git operations lack proper error handling for edge cases",
-          "description": "In actions/bootstrap/src/index.ts and actions/publish-results/src/index.ts, git operations like checkout, add, commit, and push use execSync with basic error catching but don't handle specific git failure modes. For example, if a branch already exists, checkout -B might succeed but subsequent operations could fail if the working directory is dirty or there are merge conflicts.",
-          "file": "actions/bootstrap/src/index.ts",
-          "recommendation": "Add git status checks before operations, handle specific git error codes, and implement cleanup for failed operations. Consider using git porcelain commands with proper state validation.",
+          "title": "Race condition in parallel LLM passes with shared context updates",
+          "description": "In actions/llm-analyze/src/index.ts:70-75, multiple passes run in parallel and all attempt to update the same persistent context. The mergedUpdates object combines results, but if passes modify overlapping concerns or architecture, the last writer wins without conflict resolution. This could lose important context updates.",
+          "file": "actions/llm-analyze/src/index.ts",
+          "recommendation": "Implement proper conflict resolution for context updates. Either serialize context updates or implement a merge strategy that preserves all non-conflicting changes and flags conflicts for manual resolution.",
           "references": []
         },
         {
           "id": "llm-quality-4",
           "source": "llm",
           "dimension": "functional",
-          "severity": "medium",
+          "severity": "low",
           "category": "quality",
-          "title": "Inconsistent error handling between action modules",
-          "description": "Each action module (bootstrap, context-build, discover, etc.) handles errors differently. Some use try-catch with core.setFailed, others rely on promise rejection, and some have inconsistent logging levels. This makes debugging pipeline failures difficult and could lead to silent failures or unclear error messages.",
-          "file": "actions/bootstrap/src/index.ts",
-          "recommendation": "Standardize error handling across all action modules. Create a common error handling utility that provides consistent logging, error formatting, and failure reporting to GitHub Actions.",
+          "title": "Hardcoded magic numbers without constants",
+          "description": "Several magic numbers appear throughout the codebase without named constants: MAX_FILE_BYTES = 32_000 (actions/context-build/src/index.ts:16), maxBuffer: 32 * 1024 * 1024 (multiple files), timeout: 5000 (lib/context/persistent.ts). These values are repeated and lack context for why these specific limits were chosen.",
+          "file": "actions/context-build/src/index.ts",
+          "recommendation": "Extract magic numbers into named constants with documentation explaining the rationale. Create a shared constants file for values used across multiple modules.",
           "references": []
         },
         {
           "id": "llm-quality-5",
           "source": "llm",
-          "dimension": "non_functional",
-          "severity": "medium",
-          "category": "performance",
-          "title": "Inefficient file reading in context builder",
-          "description": "In actions/context-build/src/index.ts, the selectKeyFiles function reads file contents synchronously for potentially hundreds of files, and the readFileCapped function reads entire files into memory even when truncating. For large repositories, this could cause memory pressure and slow context building.",
-          "file": "actions/context-build/src/index.ts",
-          "recommendation": "Implement streaming file reading with early truncation, add file size checks before reading, and consider async file operations with concurrency limits to improve performance and memory usage.",
-          "references": []
-        },
-        {
-          "id": "llm-quality-6",
-          "source": "llm",
-          "dimension": "non_functional",
+          "dimension": "functional",
           "severity": "low",
-          "category": "maintainability",
-          "title": "Hardcoded constants scattered across modules",
-          "description": "Magic numbers and strings are scattered throughout the codebase: MAX_FILE_BYTES = 32_000, retryDelayMs = 10_000, maxRetries = 5, etc. These constants are duplicated across different provider implementations and action modules, making configuration changes difficult.",
+          "category": "quality",
+          "title": "Potential memory leak in file content caching",
+          "description": "The selectKeyFiles function in actions/context-build/src/index.ts loads file contents into memory for all selected files without size limits per file (only MAX_FILE_BYTES per file). For repos with many large files, this could consume significant memory, especially in the matrix workflow running multiple repos in parallel.",
           "file": "actions/context-build/src/index.ts",
-          "recommendation": "Extract constants to a shared configuration module. Create a constants.ts file with well-documented defaults and allow environment variable overrides where appropriate.",
+          "recommendation": "Implement streaming or lazy loading for file contents. Consider adding a total memory budget across all files, not just per-file limits. Monitor memory usage in the GitHub Actions environment.",
           "references": []
         }
       ],
       "usage": {
-        "inputTokens": 105849,
-        "outputTokens": 1717,
+        "inputTokens": 48276,
+        "outputTokens": 1528,
         "cacheReadTokens": 0,
         "cacheWriteTokens": 0
       },
-      "costUsd": 0.343302,
-      "duration": 37.127
+      "costUsd": 0.167748,
+      "duration": 33.198
+    },
+    {
+      "pass": "documentation",
+      "findings": [
+        {
+          "id": "llm-documentation-0",
+          "source": "llm",
+          "dimension": "documentation",
+          "severity": "high",
+          "category": "documentation",
+          "title": "Massive context drift: dependency graph references non-existent files",
+          "description": "The .agents/CONTEXT.md dependency graph is completely stale. Every single dependency reference points to .js files that don't exist - the actual files are .ts. For example, the context claims `actions/bootstrap/src/index.ts` depends on `lib/context/builder.js` but the actual file is `lib/context/builder.ts`. This makes the persistent context actively misleading rather than helpful.",
+          "file": ".agents/CONTEXT.md",
+          "recommendation": "Regenerate the entire dependency graph section in CONTEXT.md to reference the actual .ts files. The context builder's `normalizeImport()` function appears to have been fixed but the generated context was never updated.",
+          "references": []
+        },
+        {
+          "id": "llm-documentation-1",
+          "source": "llm",
+          "dimension": "documentation",
+          "severity": "medium",
+          "category": "documentation",
+          "title": "README setup instructions incomplete for development",
+          "description": "The README development section shows `npm install` and bundling commands but doesn't mention that Node.js 20+ is required (specified in package.json engines). New contributors will hit cryptic errors if they're on older Node versions.",
+          "file": "README.md",
+          "recommendation": "Add a prerequisites section before the development commands: 'Prerequisites: Node.js 20+ and npm'. Also mention that git submodules are required for role definitions.",
+          "references": []
+        },
+        {
+          "id": "llm-documentation-2",
+          "source": "llm",
+          "dimension": "documentation",
+          "severity": "medium",
+          "category": "documentation",
+          "title": "Missing configuration documentation for LLM providers",
+          "description": "The README mentions 'Supported providers: Anthropic, OpenAI, Google, Ollama' but doesn't document the required configuration for each. Users need to know the specific input names (api-key vs different auth methods), base-url requirements for Ollama, model naming conventions, etc.",
+          "file": "README.md",
+          "recommendation": "Add a 'Provider Configuration' section with examples for each provider: required secrets, input parameters, and example model names (e.g., 'claude-sonnet-4-20250514' for Anthropic, 'gpt-4' for OpenAI).",
+          "references": []
+        },
+        {
+          "id": "llm-documentation-3",
+          "source": "llm",
+          "dimension": "documentation",
+          "severity": "medium",
+          "category": "documentation",
+          "title": "Action inputs/outputs not documented",
+          "description": "Each action has inputs and outputs defined in their action.yml files, but these aren't documented anywhere. Users composing their own workflows need to know what inputs are required vs optional, what the outputs contain, and how to chain the actions together.",
+          "file": "README.md",
+          "recommendation": "Add an 'Action Reference' section documenting the key inputs and outputs for each action, or link to the action.yml files with a note about their structure.",
+          "references": []
+        },
+        {
+          "id": "llm-documentation-4",
+          "source": "llm",
+          "dimension": "documentation",
+          "severity": "low",
+          "category": "documentation",
+          "title": "Submodule setup instructions buried",
+          "description": "The git submodule setup instructions are at the bottom of the development section as an afterthought ('If you already cloned without --recurse-submodules'). Since role definitions are a key feature, this should be more prominent.",
+          "file": "README.md",
+          "recommendation": "Move the submodule instructions up to the main clone command and emphasize their importance: 'Clone with submodules (required for role definitions): git clone --recurse-submodules ...'",
+          "references": []
+        },
+        {
+          "id": "llm-documentation-5",
+          "source": "llm",
+          "dimension": "documentation",
+          "severity": "low",
+          "category": "documentation",
+          "title": "No troubleshooting section",
+          "description": "Complex multi-action workflows with external dependencies (shellcheck, gitleaks, etc.) will inevitably have setup issues, but there's no troubleshooting guide. Common issues like missing static analysis tools, authentication failures, or submodule problems aren't addressed.",
+          "file": "README.md",
+          "recommendation": "Add a 'Troubleshooting' section covering common issues: missing static analysis tools (and how they're handled), authentication setup, submodule problems, and how to debug failed audit runs.",
+          "references": []
+        }
+      ],
+      "usage": {
+        "inputTokens": 48245,
+        "outputTokens": 1211,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 0
+      },
+      "costUsd": 0.1629,
+      "duration": 176.253
     }
   ],
   "staticFindings": [],
   "llmFindings": [
+    {
+      "id": "llm-security-0",
+      "source": "llm",
+      "dimension": "non_functional",
+      "severity": "high",
+      "category": "security",
+      "title": "Hardcoded GitHub token in remote URL construction",
+      "description": "In actions/bootstrap/src/index.ts:142 and actions/publish-results/src/index.ts:179, GitHub tokens are directly embedded in git remote URLs using string interpolation: `https://x-access-token:${token}@github.com/${owner}/${repo}.git`. This exposes the token in process arguments, shell history, and potentially in logs or error messages. If the git command fails, the token could be leaked in error output.",
+      "file": "actions/bootstrap/src/index.ts",
+      "recommendation": "Use git credential helpers or configure the remote separately from the push command. Consider using `git config credential.helper` or the `GIT_ASKPASS` environment variable to provide credentials securely without embedding them in URLs.",
+      "references": [
+        {
+          "url": "https://git-scm.com/docs/gitcredentials",
+          "title": "Git Credentials Documentation"
+        }
+      ]
+    },
+    {
+      "id": "llm-security-1",
+      "source": "llm",
+      "dimension": "functional",
+      "severity": "medium",
+      "category": "bug",
+      "title": "Race condition in parallel LLM pass execution",
+      "description": "In actions/llm-analyze/src/index.ts:85-87, multiple LLM passes run in parallel using Promise.all(), but they all attempt to update the same persistent context object. While the current implementation uses structuredClone() in applyContextUpdates(), the merging of context updates from parallel passes (lines 89-97) could lead to lost updates if passes modify overlapping concerns or architecture changes simultaneously.",
+      "file": "actions/llm-analyze/src/index.ts",
+      "recommendation": "Implement proper synchronization for context updates, or serialize the context update phase after all passes complete. Consider using a merge strategy that can handle conflicting updates from different passes.",
+      "references": []
+    },
+    {
+      "id": "llm-security-2",
+      "source": "llm",
+      "dimension": "non_functional",
+      "severity": "medium",
+      "category": "security",
+      "title": "Unsafe shell command construction with user input",
+      "description": "Multiple locations construct shell commands using string interpolation with user-controlled input without proper escaping. For example, in actions/bootstrap/src/index.ts:141 and actions/context-build/src/index.ts:169, repo paths and branch names are directly interpolated into git commands. A malicious repo name or branch name containing shell metacharacters could lead to command injection.",
+      "file": "actions/bootstrap/src/index.ts",
+      "recommendation": "Use execFileSync() with argument arrays instead of execSync() with interpolated strings, or implement proper shell escaping for all user-controlled input. For git operations, consider using a git library like simple-git instead of shell commands.",
+      "references": [
+        {
+          "url": "https://nodejs.org/api/child_process.html#child_processexecfilesyncfile-args-options",
+          "title": "Node.js execFileSync Documentation"
+        }
+      ]
+    },
+    {
+      "id": "llm-security-3",
+      "source": "llm",
+      "dimension": "functional",
+      "severity": "medium",
+      "category": "bug",
+      "title": "Missing error handling for file operations in critical paths",
+      "description": "Several file operations lack proper error handling that could cause silent failures or crashes. For example, in actions/context-build/src/index.ts:234-242, the readFileCapped() function catches all errors and returns null, but callers don't always check for null returns. In lib/context/persistent.ts, file parsing operations could fail silently, leading to incomplete context data.",
+      "file": "actions/context-build/src/index.ts",
+      "recommendation": "Add explicit error handling for critical file operations. Distinguish between expected failures (file not found) and unexpected failures (permission denied, disk full). Log warnings for unexpected failures and ensure callers handle null/undefined returns appropriately.",
+      "references": []
+    },
+    {
+      "id": "llm-security-4",
+      "source": "llm",
+      "dimension": "functional",
+      "severity": "low",
+      "category": "maintainability",
+      "title": "Inconsistent import path resolution logic",
+      "description": "The import graph computation in lib/context/builder.ts:280-320 uses different normalization logic for different file types, but the path resolution for relative imports (lines 295-310) doesn't handle edge cases like imports that go above the repository root or circular relative references. The normalizeImport function also has inconsistent behavior between shell and other languages.",
+      "file": "lib/context/builder.ts",
+      "recommendation": "Standardize the import resolution logic across all file types. Add bounds checking to prevent path traversal above the repository root. Consider using a proper path resolution library or implementing comprehensive test cases for edge cases.",
+      "references": []
+    },
+    {
+      "id": "llm-security-5",
+      "source": "llm",
+      "dimension": "non_functional",
+      "severity": "low",
+      "category": "performance",
+      "title": "Inefficient file content loading for large repositories",
+      "description": "The key file selection process in actions/context-build/src/index.ts loads full file contents for scoring and then again for the final KeyFile objects. For large repositories, this could result in reading the same files multiple times and keeping large amounts of content in memory simultaneously. The MAX_FILE_BYTES limit helps but doesn't prevent the double-read issue.",
+      "file": "actions/context-build/src/index.ts",
+      "recommendation": "Implement a file content cache or lazy loading strategy. Consider streaming file content or using file metadata for initial scoring before loading full content only for selected files.",
+      "references": []
+    },
     {
       "id": "llm-quality-0",
       "source": "llm",
       "dimension": "functional",
       "severity": "high",
       "category": "bug",
-      "title": "Massive context drift indicates broken dependency resolution",
-      "description": "The persistent context documents 50+ modules and dependencies that don't exist in the actual codebase. All lib/ modules are documented as .js files but exist as .ts files. The dependency graph references non-existent paths like 'actions/context', 'actions/llm', 'actions/publish', 'actions/static' when the actual paths are 'actions/context-build', 'actions/llm-analyze', etc. This suggests the context builder is fundamentally broken or using stale data, which would cause the LLM analysis to operate on completely wrong information.",
+      "title": "Massive context drift indicates stale dependency graph in CONTEXT.md",
+      "description": "The context drift shows 60+ stale dependencies where the dependency graph references .js files that don't exist, but the actual files are .ts. This indicates the dependency graph was generated incorrectly or the context is severely outdated. For example, `actions/bootstrap/src/index.ts` depends on `lib/context/builder.js` which does not exist - it should be `lib/context/builder.ts`. This will cause runtime import failures.",
       "file": ".agents/CONTEXT.md",
-      "recommendation": "Immediately fix the context builder to scan actual file paths and extensions. The buildPersistentContext function in lib/context/builder.ts needs to correctly resolve TypeScript imports and use actual directory names. This is critical for the entire RSI system to function.",
+      "recommendation": "Regenerate the dependency graph using the correct file extensions. The `computeImportGraph` function in `lib/context/builder.ts` should normalize imports to use .ts extensions, not .js extensions when building the graph.",
       "references": []
     },
     {
       "id": "llm-quality-1",
       "source": "llm",
       "dimension": "functional",
-      "severity": "high",
+      "severity": "medium",
       "category": "bug",
-      "title": "Import resolution will fail due to .js extension assumptions",
-      "description": "Throughout the TypeScript source files (actions/*/src/index.ts), imports use .js extensions for lib/ modules (e.g., '../../../lib/context/builder.js') but the actual files are .ts. While TypeScript compilation might handle this, the context builder and dependency graph logic appears to expect .js files, creating a mismatch between documented and actual module structure.",
+      "title": "Import path inconsistency between ES modules and file extensions",
+      "description": "Throughout the codebase, TypeScript files import from paths ending in .js (e.g., `from '../../../lib/context/builder.js'` in actions/bootstrap/src/index.ts:11) but the actual files are .ts. While this works with TypeScript's module resolution, it creates confusion and the dependency graph builder may not handle this correctly.",
       "file": "actions/bootstrap/src/index.ts",
-      "recommendation": "Standardize import paths to use .ts extensions in source and ensure the build process correctly maps these. Update the context builder to understand TypeScript module resolution rules.",
+      "recommendation": "Either consistently use .js extensions in imports (current approach) or update the dependency graph builder to handle TypeScript's ES module resolution correctly. Document this convention in CONTEXT.md.",
       "references": []
     },
     {
@@ -131,11 +381,11 @@
       "source": "llm",
       "dimension": "functional",
       "severity": "medium",
-      "category": "bug",
-      "title": "Race condition in parallel LLM provider loading",
-      "description": "In actions/llm-analyze/src/index.ts, the code uses dynamic imports for LLM providers with Promise.all for parallel passes, but the provider creation happens synchronously after the import. If multiple passes try to create the same provider type simultaneously, there could be initialization conflicts, especially with shared resources like HTTP clients or rate limiters.",
-      "file": "actions/llm-analyze/src/index.ts",
-      "recommendation": "Add provider instance caching or ensure provider creation is idempotent. Consider using a provider factory with singleton pattern to avoid duplicate initialization.",
+      "category": "quality",
+      "title": "Error handling inconsistency across action modules",
+      "description": "Each action handles errors differently. Some use try-catch with core.setFailed (actions/bootstrap/src/index.ts:165), others rely on unhandled promise rejection (actions/discover/src/index.ts:75). The static-analysis action uses a runSafely wrapper (actions/static-analysis/src/index.ts:35) while others don't. This makes debugging and monitoring inconsistent.",
+      "file": "actions/bootstrap/src/index.ts",
+      "recommendation": "Standardize error handling across all actions. Create a common error handling utility that logs context, sets appropriate exit codes, and provides consistent error messages. Update all action entry points to use this pattern.",
       "references": []
     },
     {
@@ -144,58 +394,120 @@
       "dimension": "functional",
       "severity": "medium",
       "category": "bug",
-      "title": "Git operations lack proper error handling for edge cases",
-      "description": "In actions/bootstrap/src/index.ts and actions/publish-results/src/index.ts, git operations like checkout, add, commit, and push use execSync with basic error catching but don't handle specific git failure modes. For example, if a branch already exists, checkout -B might succeed but subsequent operations could fail if the working directory is dirty or there are merge conflicts.",
-      "file": "actions/bootstrap/src/index.ts",
-      "recommendation": "Add git status checks before operations, handle specific git error codes, and implement cleanup for failed operations. Consider using git porcelain commands with proper state validation.",
+      "title": "Race condition in parallel LLM passes with shared context updates",
+      "description": "In actions/llm-analyze/src/index.ts:70-75, multiple passes run in parallel and all attempt to update the same persistent context. The mergedUpdates object combines results, but if passes modify overlapping concerns or architecture, the last writer wins without conflict resolution. This could lose important context updates.",
+      "file": "actions/llm-analyze/src/index.ts",
+      "recommendation": "Implement proper conflict resolution for context updates. Either serialize context updates or implement a merge strategy that preserves all non-conflicting changes and flags conflicts for manual resolution.",
       "references": []
     },
     {
       "id": "llm-quality-4",
       "source": "llm",
       "dimension": "functional",
-      "severity": "medium",
+      "severity": "low",
       "category": "quality",
-      "title": "Inconsistent error handling between action modules",
-      "description": "Each action module (bootstrap, context-build, discover, etc.) handles errors differently. Some use try-catch with core.setFailed, others rely on promise rejection, and some have inconsistent logging levels. This makes debugging pipeline failures difficult and could lead to silent failures or unclear error messages.",
-      "file": "actions/bootstrap/src/index.ts",
-      "recommendation": "Standardize error handling across all action modules. Create a common error handling utility that provides consistent logging, error formatting, and failure reporting to GitHub Actions.",
+      "title": "Hardcoded magic numbers without constants",
+      "description": "Several magic numbers appear throughout the codebase without named constants: MAX_FILE_BYTES = 32_000 (actions/context-build/src/index.ts:16), maxBuffer: 32 * 1024 * 1024 (multiple files), timeout: 5000 (lib/context/persistent.ts). These values are repeated and lack context for why these specific limits were chosen.",
+      "file": "actions/context-build/src/index.ts",
+      "recommendation": "Extract magic numbers into named constants with documentation explaining the rationale. Create a shared constants file for values used across multiple modules.",
       "references": []
     },
     {
       "id": "llm-quality-5",
       "source": "llm",
-      "dimension": "non_functional",
-      "severity": "medium",
-      "category": "performance",
-      "title": "Inefficient file reading in context builder",
-      "description": "In actions/context-build/src/index.ts, the selectKeyFiles function reads file contents synchronously for potentially hundreds of files, and the readFileCapped function reads entire files into memory even when truncating. For large repositories, this could cause memory pressure and slow context building.",
+      "dimension": "functional",
+      "severity": "low",
+      "category": "quality",
+      "title": "Potential memory leak in file content caching",
+      "description": "The selectKeyFiles function in actions/context-build/src/index.ts loads file contents into memory for all selected files without size limits per file (only MAX_FILE_BYTES per file). For repos with many large files, this could consume significant memory, especially in the matrix workflow running multiple repos in parallel.",
       "file": "actions/context-build/src/index.ts",
-      "recommendation": "Implement streaming file reading with early truncation, add file size checks before reading, and consider async file operations with concurrency limits to improve performance and memory usage.",
+      "recommendation": "Implement streaming or lazy loading for file contents. Consider adding a total memory budget across all files, not just per-file limits. Monitor memory usage in the GitHub Actions environment.",
       "references": []
     },
     {
-      "id": "llm-quality-6",
+      "id": "llm-documentation-0",
       "source": "llm",
-      "dimension": "non_functional",
+      "dimension": "documentation",
+      "severity": "high",
+      "category": "documentation",
+      "title": "Massive context drift: dependency graph references non-existent files",
+      "description": "The .agents/CONTEXT.md dependency graph is completely stale. Every single dependency reference points to .js files that don't exist - the actual files are .ts. For example, the context claims `actions/bootstrap/src/index.ts` depends on `lib/context/builder.js` but the actual file is `lib/context/builder.ts`. This makes the persistent context actively misleading rather than helpful.",
+      "file": ".agents/CONTEXT.md",
+      "recommendation": "Regenerate the entire dependency graph section in CONTEXT.md to reference the actual .ts files. The context builder's `normalizeImport()` function appears to have been fixed but the generated context was never updated.",
+      "references": []
+    },
+    {
+      "id": "llm-documentation-1",
+      "source": "llm",
+      "dimension": "documentation",
+      "severity": "medium",
+      "category": "documentation",
+      "title": "README setup instructions incomplete for development",
+      "description": "The README development section shows `npm install` and bundling commands but doesn't mention that Node.js 20+ is required (specified in package.json engines). New contributors will hit cryptic errors if they're on older Node versions.",
+      "file": "README.md",
+      "recommendation": "Add a prerequisites section before the development commands: 'Prerequisites: Node.js 20+ and npm'. Also mention that git submodules are required for role definitions.",
+      "references": []
+    },
+    {
+      "id": "llm-documentation-2",
+      "source": "llm",
+      "dimension": "documentation",
+      "severity": "medium",
+      "category": "documentation",
+      "title": "Missing configuration documentation for LLM providers",
+      "description": "The README mentions 'Supported providers: Anthropic, OpenAI, Google, Ollama' but doesn't document the required configuration for each. Users need to know the specific input names (api-key vs different auth methods), base-url requirements for Ollama, model naming conventions, etc.",
+      "file": "README.md",
+      "recommendation": "Add a 'Provider Configuration' section with examples for each provider: required secrets, input parameters, and example model names (e.g., 'claude-sonnet-4-20250514' for Anthropic, 'gpt-4' for OpenAI).",
+      "references": []
+    },
+    {
+      "id": "llm-documentation-3",
+      "source": "llm",
+      "dimension": "documentation",
+      "severity": "medium",
+      "category": "documentation",
+      "title": "Action inputs/outputs not documented",
+      "description": "Each action has inputs and outputs defined in their action.yml files, but these aren't documented anywhere. Users composing their own workflows need to know what inputs are required vs optional, what the outputs contain, and how to chain the actions together.",
+      "file": "README.md",
+      "recommendation": "Add an 'Action Reference' section documenting the key inputs and outputs for each action, or link to the action.yml files with a note about their structure.",
+      "references": []
+    },
+    {
+      "id": "llm-documentation-4",
+      "source": "llm",
+      "dimension": "documentation",
       "severity": "low",
-      "category": "maintainability",
-      "title": "Hardcoded constants scattered across modules",
-      "description": "Magic numbers and strings are scattered throughout the codebase: MAX_FILE_BYTES = 32_000, retryDelayMs = 10_000, maxRetries = 5, etc. These constants are duplicated across different provider implementations and action modules, making configuration changes difficult.",
-      "file": "actions/context-build/src/index.ts",
-      "recommendation": "Extract constants to a shared configuration module. Create a constants.ts file with well-documented defaults and allow environment variable overrides where appropriate.",
+      "category": "documentation",
+      "title": "Submodule setup instructions buried",
+      "description": "The git submodule setup instructions are at the bottom of the development section as an afterthought ('If you already cloned without --recurse-submodules'). Since role definitions are a key feature, this should be more prominent.",
+      "file": "README.md",
+      "recommendation": "Move the submodule instructions up to the main clone command and emphasize their importance: 'Clone with submodules (required for role definitions): git clone --recurse-submodules ...'",
+      "references": []
+    },
+    {
+      "id": "llm-documentation-5",
+      "source": "llm",
+      "dimension": "documentation",
+      "severity": "low",
+      "category": "documentation",
+      "title": "No troubleshooting section",
+      "description": "Complex multi-action workflows with external dependencies (shellcheck, gitleaks, etc.) will inevitably have setup issues, but there's no troubleshooting guide. Common issues like missing static analysis tools, authentication failures, or submodule problems aren't addressed.",
+      "file": "README.md",
+      "recommendation": "Add a 'Troubleshooting' section covering common issues: missing static analysis tools (and how they're handled), authentication setup, submodule problems, and how to debug failed audit runs.",
       "references": []
     }
   ],
   "cost": {
-    "totalUsd": 0.343302,
+    "totalUsd": 0.5014335000000001,
     "perPass": {
-      "quality": 0.343302
+      "security": 0.1707855,
+      "quality": 0.167748,
+      "documentation": 0.1629
     },
-    "inputTokens": 105849,
-    "outputTokens": 1717
+    "inputTokens": 143777,
+    "outputTokens": 4413
   },
-  "summary": "The repository has a critical context drift issue where the documented architecture doesn't match the actual codebase, potentially breaking the entire RSI system. The TypeScript-based action architecture is sound but needs better error handling standardization and performance optimization.",
+  "summary": "The codebase shows good architectural separation but has several security and reliability concerns. The most critical issues are hardcoded tokens in git URLs and potential command injection from unescaped user input. The parallel LLM execution introduces race conditions that need proper synchronization. The codebase has a critical issue with stale dependency mappings causing massive context drift, plus several quality issues around error handling consistency and potential race conditions in parallel processing. The architecture is sound but needs dependency graph regeneration and error handling standardization. Documentation has critical accuracy issues with completely stale dependency references in the persistent context, plus missing setup prerequisites and configuration details that would block new contributors.",
   "contextUpdated": true,
   "bootstrapped": false
 }
