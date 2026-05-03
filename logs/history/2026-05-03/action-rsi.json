@@ -1,0 +1,16 @@
+{
+  "repo": "jvanheerikhuize/action-rsi",
+  "date": "2026-05-03",
+  "passes": [],
+  "staticFindings": [],
+  "llmFindings": [],
+  "cost": {
+    "totalUsd": 0,
+    "perPass": {},
+    "inputTokens": 0,
+    "outputTokens": 0
+  },
+  "summary": "Audit completed with no narrative summary.",
+  "contextUpdated": true,
+  "bootstrapped": false
+}
