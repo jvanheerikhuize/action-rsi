@@ -1,0 +1,40 @@
+metadata:
+  id: FEAT-0014
+  title: 'Inefficient file content loading for large repositories'
+  version: 1.0.0
+  status: draft
+  priority: low
+  author: 'RSI Audit Agent'
+  created_at: "2026-04-12"
+  updated_at: "2026-04-12"
+  tags:
+    - rsi-audit
+    - non_functional
+    - performance
+description:
+  summary: 'Automated audit finding: Inefficient file content loading for large repositories'
+  problem_statement: |
+    The key file selection process in actions/context-build/src/index.ts loads full file contents for scoring and then again for the final KeyFile objects. For large repositories, this could result in reading the same files multiple times and keeping large amounts of content in memory simultaneously. The MAX_FILE_BYTES limit helps but doesn't prevent the double-read issue.
+  proposed_solution: 'Implement a file content cache or lazy loading strategy. Consider streaming file content or using file metadata for initial scoring before loading full content only for selected files.'
+  out_of_scope:
+    - Changes unrelated to the identified findings
+  dependencies: []
+technical_requirements:
+  constraints: []
+  security: []
+acceptance_criteria:
+  - id: AC-001
+    given: 'The file actions/context-build/src/index.ts exists in the repository'
+    when: The changes from this spec are applied
+    then: 'Implement a file content cache or lazy loading strategy. Consider streaming file content or using file metadata for initial scoring before loading full content only for selected files.'
+technical_notes: 'Files affected: actions/context-build/src/index.ts'
+testing_requirements:
+  unit_tests: true
+  integration_tests: false
+  e2e_tests: false
+  performance_tests: false
+  test_scenarios:
+    - Verify the fix addresses the identified issue
+rollout:
+  rollout_strategy: manual
+  rollback_plan: Revert the changes introduced by this spec via git revert.

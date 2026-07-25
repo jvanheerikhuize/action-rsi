@@ -1,0 +1,41 @@
+metadata:
+  id: FEAT-0006
+  title: 'Missing error handling for file operations in critical paths'
+  version: 1.0.0
+  status: draft
+  priority: medium
+  author: 'RSI Audit Agent'
+  created_at: "2026-04-12"
+  updated_at: "2026-04-12"
+  tags:
+    - rsi-audit
+    - functional
+    - bug
+description:
+  summary: 'Automated audit finding: Missing error handling for file operations in critical paths'
+  problem_statement: |
+    Several file operations lack proper error handling that could cause silent failures or crashes. For example, in actions/context-build/src/index.ts:234-242, the readFileCapped() function catches all errors and returns null, but callers don't always check for null returns. In lib/context/persistent.ts, file parsing operations could fail silently, leading to incomplete context data.
+  proposed_solution: |
+    Add explicit error handling for critical file operations. Distinguish between expected failures (file not found) and unexpected failures (permission denied, disk full). Log warnings for unexpected failures and ensure callers handle null/undefined returns appropriately.
+  out_of_scope:
+    - Changes unrelated to the identified findings
+  dependencies: []
+technical_requirements:
+  constraints: []
+  security: []
+acceptance_criteria:
+  - id: AC-001
+    given: 'The file actions/context-build/src/index.ts exists in the repository'
+    when: The changes from this spec are applied
+    then: 'Add explicit error handling for critical file operations. Distinguish between expected failures (file not found) and unexpected failures (permission denied, disk full). Log warnings for unexpected failures and ensure callers handle null/undefined returns appropriately.'
+technical_notes: 'Files affected: actions/context-build/src/index.ts'
+testing_requirements:
+  unit_tests: true
+  integration_tests: false
+  e2e_tests: false
+  performance_tests: false
+  test_scenarios:
+    - Verify the fix addresses the identified issue
+rollout:
+  rollout_strategy: manual
+  rollback_plan: Revert the changes introduced by this spec via git revert.
