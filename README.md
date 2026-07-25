@@ -100,3 +100,9 @@ git submodule update --init
 ## License
 
 [MIT](LICENSE)
+
+## Roadmap
+
+Roadmap integrated in [workflow matrix](#workflow-matrix-structure). New checks and sub-actions added via PRs and issue tracking.
+
+---
