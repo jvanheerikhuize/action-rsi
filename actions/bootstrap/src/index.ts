@@ -16,6 +16,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { buildPersistentContext, computeImportGraph } from "../../../lib/context/builder.js";
 import { generateContextMd } from "../../../lib/context/persistent.js";
+import { pushWithToken } from "../../../lib/git-push.js";
 import { detectLanguages } from "../../../lib/language-detect.js";
 import { AGENTS_MD_TEMPLATE } from "../../../lib/templates/agents-md.js";
 import type { RepoSummary } from "../../../lib/types.js";
@@ -170,8 +171,7 @@ async function openBootstrapPr(input: OpenPrInput): Promise<string> {
   const commitMsg = `chore: add agent context infrastructure\n\nAdds .agents/CONTEXT.md and .agents/AGENTS.md so local AI agents\nhave persistent context and instructions for this repository.`;
   execSync(`git -C "${repoPath}" -c user.name="rsi-bot" -c user.email="rsi-bot@users.noreply.github.com" commit -m ${JSON.stringify(commitMsg)}`, { stdio: "inherit" });
 
-  const remoteUrl = `https://x-access-token:${token}@github.com/${owner}/${repo}.git`;
-  execSync(`git -C "${repoPath}" push --force "${remoteUrl}" "${branch}"`, { stdio: "inherit" });
+  pushWithToken(repoPath, owner, repo, branch, token);
 
   const octokit = github.getOctokit(token);
   const title = "Add agent context infrastructure (RSI bootstrap)";
