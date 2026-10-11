@@ -17,6 +17,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join } from "node:path";
 import { findingsToSpecs } from "../../../lib/formats/asdlc-spec.js";
 import { findingsToSarif } from "../../../lib/formats/sarif.js";
+import { pushWithToken } from "../../../lib/git-push.js";
 import type { Finding, OutputFormat, Severity } from "../../../lib/types.js";
 
 const CONTEXT_PATH = ".agents/CONTEXT.md";
@@ -185,8 +186,7 @@ async function openAuditPr(input: OpenPrInput): Promise<string> {
   const commitMsg = `chore: RSI audit ${auditDate}\n\n${specsCreated} new spec(s), ${llmFindingsCount} LLM finding(s), ${staticFindingsCount} static finding(s).`;
   execSync(`git -C "${repoPath}" -c user.name="rsi-bot" -c user.email="rsi-bot@users.noreply.github.com" commit -m ${JSON.stringify(commitMsg)}`, { stdio: "inherit" });
 
-  const remote = `https://x-access-token:${token}@github.com/${owner}/${repo}.git`;
-  execSync(`git -C "${repoPath}" push --force "${remote}" "${branch}"`, { stdio: "inherit" });
+  pushWithToken(repoPath, owner, repo, branch, token);
 
   const octokit = github.getOctokit(token);
   const title = `RSI Audit ${auditDate}`;
